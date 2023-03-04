@@ -16,7 +16,7 @@ int main(int argc, char * argv[]) {
     return 1;
   }
 
-  const int data_size = 34;
+  const int data_size = 35;
   char data[data_size];
   // Sender
   if (rank == 0) {
