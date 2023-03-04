@@ -1,6 +1,6 @@
 ## Konfiguracja
 
-Opis maszyn (hardware'u) i ich konfiguracji z których będzie korzystał działający program umieszcza się 
+Opis maszyn (hardware) i ich konfiguracji z których będzie korzystał działający program umieszcza się 
 w pliku zwanym `machinefile`, który zwykle jest zwykłym plikiem tekstowym w formacie
 
 ```
@@ -48,4 +48,19 @@ Przykład:
 ```bash
 mpiexec -machinefile <path_to_machine_file> -np <process_count> <executable_path>
 ```
+
+Takie polecne uruchomi nam zestaw `<process_count>` jednakowych procesów. 
+
+Jeżeli chcemy wykonać różne procesy, to wtedy trzeba użyć składni z dwukropkiem:
+
+```bash
+mpiexec -n <process_count_1> -host <host> <executable_1> : -n <process_count_2> -h <host> <executable_2>
+```
+
+Przydatne opcje do przetestowania to 
+
+`-f`, `-configfile`, `-l`
+
+
+**Ważne** jest to, że tak uruchomione procesy dzielą jeden wspólny komunikator `MPI_COMM_WORLD`
 
