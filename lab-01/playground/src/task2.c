@@ -19,6 +19,9 @@ int main(int argc, char * argv[]) {
   
   double start_time, end_time;
 
+  // Synchronizujemy wszystkie procesy tego komunkatora
+  MPI_Barrier(MPI_COMM_WORLD);
+
   start_time = MPI_Wtime();
   for (int i = 0; i < iteration_count; ++i) {
     if (rank == cping) {
