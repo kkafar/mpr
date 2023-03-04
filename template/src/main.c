@@ -2,6 +2,7 @@
 
 int main(int argc, char * argv[]) {
 	MPI_Init(&argc, &argv);
-	return 0;
+	printf("Hello world from OpenMPI\n");
 	MPI_Finalize();
+	return 0;
 }
