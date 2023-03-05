@@ -63,6 +63,7 @@ bool init_global_state(void) {
 
 void print_process_info(void) {
   printf("Hostname: %s, Process: %d, Total Process Count: %d, Config codename: %d\n", g_hostname.data, g_rank, g_size, CONFIG_CODE);
+  fflush(stdout);
 }
 
 // pomiary przepustowości w zależności od długości komunikatów
@@ -113,7 +114,15 @@ void experiment_2(void) {
   }
   end_time = MPI_Wtime();
 
+  double elapsed_time = end_time - start_time;
+  double single_send_time = elapsed_time / (ITERATION_COUNT * 2);
+
   printf("Time elapsed on %d: %lf\n", g_rank, end_time - start_time);
+
+  if (g_rank == cping) {
+    printf("Single send time: %lf\n", single_send_time);
+  }
+
   printf("Ending   EXP 2 on process: %d\n", g_rank);
 }
 
