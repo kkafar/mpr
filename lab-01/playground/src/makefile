@@ -4,14 +4,19 @@ build-main: main.c
 run-main: build-main
 	mpiexec -machinefile ./allnodes -np 2 ./main
 
-run-main-single: build-main
+run-main-single-node: build-main
 	mpiexec -machinefile ./single-node -np 2 ./main
-	mv delay-std.csv delay-single-node.csv
-	mv throughput-std.csv throughput-single-node.csv
+	mv delay-std.csv delay-std-single-node.csv
+	mv throughput-std.csv throughput-std-single-node.csv
+	mv delay-buff.csv delay-buff-single-node.csv
+	mv throughput-buff.csv throughput-buff-single-node.csv
 
 run-main-two-nodes: build-main
 	mpiexec -machinefile ./two-nodes -np 2 ./main
-	mv delay-std.csv delay-two-nodes.csv
-	mv throughput-std.csv throughput-two-nodes.csv
+	mv delay-std.csv delay-std-two-nodes.csv
+	mv throughput-std.csv throughput-std-two-nodes.csv
+	mv delay-buff.csv delay-buff-two-nodes.csv
+	mv throughput-buff.csv throughput-buff-two-nodes.csv
+
 
 

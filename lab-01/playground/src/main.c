@@ -94,6 +94,15 @@ void experiment_throughput(ExperimentConfig cfg) {
   const int cpong = 1;
   double start_time, end_time;
 
+  // Just arbitrarily big buffer
+  const int comm_buffer_size = MSG_MAX_SIZE * 4;
+  char comm_buffer[comm_buffer_size];
+
+  // buffered communication
+  if (cfg.name[0] == 'b') {
+    MPI_Buffer_attach(comm_buffer, comm_buffer_size);
+  }
+
   for (int i = 0; i < msg_sizes_arr_size; ++i) {
     MPI_Barrier(MPI_COMM_WORLD);
     int msg_size = msg_sizes_arr[i];
@@ -121,6 +130,10 @@ void experiment_throughput(ExperimentConfig cfg) {
     }
   }
 
+  if (cfg.name[0] == 'b') {
+    int size;
+    MPI_Buffer_detach(comm_buffer, &size);
+  }
 
   if (g_rank == 0) {
     fclose(logfile);
@@ -202,11 +215,36 @@ int main(int argc, char * argv[]) {
     .params = NULL
   };
 
+  ExperimentConfig throughput_buf_cfg = {
+    .name = "buff",
+    .description = "Throughput buff",
+    .sendhandle = MPI_Bsend,
+    .recvhandle = MPI_Recv,
+    .logfilename = "throughput-buff.csv",
+    .params = NULL
+  };
+
+  ExperimentConfig delay_buf_cfg = {
+    .name = "buff",
+    .description = "Delay buff",
+    .sendhandle = MPI_Bsend,
+    .recvhandle = MPI_Recv,
+    .logfilename = "delay-buff.csv",
+    .params = NULL
+  };
+
+
   MPI_Barrier(MPI_COMM_WORLD);
   experiment_throughput(throughput_cfg);
 
   MPI_Barrier(MPI_COMM_WORLD);
+  experiment_throughput(throughput_buf_cfg);
+
+  MPI_Barrier(MPI_COMM_WORLD);
   experiment_delay(delay_cfg);
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  experiment_delay(delay_buf_cfg);
 
   // experiment_delay(MPI_Bsend, MPI_Recv, "Delay buff");
 
