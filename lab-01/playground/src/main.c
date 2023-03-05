@@ -23,6 +23,16 @@ typedef struct String {
   size_t capacity;
 } String;
 
+typedef struct ExperimentConfig {
+  char *name; // non owning
+  char *description; // non owning
+  FnSendHandle sendhandle;
+  FnRecvHanlde recvhandle;
+  char *logfilename; // non owning
+  void *params; // non owning
+} ExperimentConfig;
+
+
 bool string_init(String *str, char *mem, const size_t len, const size_t capacity) {
   str->data = mem;
   str->len = len;
@@ -54,6 +64,11 @@ bool init_global_state(void) {
   return true;
 }
 
+bool teardown_global_state(void) {
+  string_dealloc(&g_hostname);
+  return true;
+}
+
 void log_info(char * info) {
   if (info == NULL) info = "";
   printf("[%s][%d/%d] I %s\n", g_hostname.data, g_rank, g_size, info);
@@ -61,13 +76,23 @@ void log_info(char * info) {
 }
 
 // pomiary przepustowości w zależności od długości komunikatów
-void experiment_throughput(FnSendHandle send_fn, FnRecvHanlde recv_fn, char *description) {
-  log_info(description);
+void experiment_throughput(ExperimentConfig cfg) {
+  if (g_rank == 0) log_info(cfg.description);
 }
 
 // pomiary opóźnienia (przepustowość przy małym komunikacie)
-void experiment_delay(FnSendHandle send_fn, FnRecvHanlde recv_fn, char *description) {
-  if (g_rank == 0) log_info(description);
+void experiment_delay(ExperimentConfig cfg) {
+  if (g_rank == 0) log_info(cfg.description);
+
+  FILE *logfile;
+  if (g_rank == 0) {
+    logfile = fopen(cfg.logfilename, "w");
+    if (logfile == NULL) {
+      log_info("Failed to open logfile");
+      return;
+    }
+  }
+
 
   const int cping = 0;
   const int cpong = 1;
@@ -82,11 +107,11 @@ void experiment_delay(FnSendHandle send_fn, FnRecvHanlde recv_fn, char *descript
   start_time = MPI_Wtime() * S_TO_MS_FACTOR;
   for (int i = 0; i < ITERATION_COUNT; ++i) {
     if (g_rank == cping) {
-      send_fn(&payload, 1, MPI_BYTE, cpong, 0, MPI_COMM_WORLD);
-      recv_fn(&payload, 1, MPI_BYTE, cpong, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      cfg.sendhandle(&payload, 1, MPI_BYTE, cpong, 0, MPI_COMM_WORLD);
+      cfg.recvhandle(&payload, 1, MPI_BYTE, cpong, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     } else if (g_rank == cpong) {
-      recv_fn(&payload, 1, MPI_BYTE, cping, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      send_fn(&payload, 1, MPI_BYTE, cping, 0, MPI_COMM_WORLD);
+      cfg.recvhandle(&payload, 1, MPI_BYTE, cping, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      cfg.sendhandle(&payload, 1, MPI_BYTE, cping, 0, MPI_COMM_WORLD);
     } else {
       printf("Dunno what happened\n");
     }
@@ -96,7 +121,13 @@ void experiment_delay(FnSendHandle send_fn, FnRecvHanlde recv_fn, char *descript
   if (g_rank == cping) {
     double elapsed_time = end_time - start_time;
     double single_send_time = elapsed_time / (ITERATION_COUNT * 2);
-    printf("Single send time: %lf [ms]\n", single_send_time);
+    printf("data,delay Single send time: %lf [ms]\n", single_send_time);
+    fprintf(logfile, "time\n");
+    fprintf(logfile, "%lf\n", single_send_time);
+  }
+
+  if (g_rank == 0) {
+    fclose(logfile);
   }
 }
 
@@ -104,15 +135,35 @@ void experiment_delay(FnSendHandle send_fn, FnRecvHanlde recv_fn, char *descript
 int main(int argc, char * argv[]) {
   MPI_Init(&argc, &argv);
   assert((init_global_state() == true) && "Global state initialized");
-  log_info(NULL);
+  log_info("Initialized");
+
+  ExperimentConfig throughput_cfg = {
+    .name = "Throughput std",
+    .description = "Throughput std",
+    .sendhandle = MPI_Send,
+    .recvhandle = MPI_Recv,
+    .logfilename = "throughput-std.csv",
+    .params = NULL
+  };
+
+  ExperimentConfig delay_cfg = {
+    .name = "Delay std",
+    .description = "Delay std",
+    .sendhandle = MPI_Send,
+    .recvhandle = MPI_Recv,
+    .logfilename = "delay-std.csv",
+    .params = NULL
+  };
 
   MPI_Barrier(MPI_COMM_WORLD);
-  experiment_throughput(MPI_Send, MPI_Recv, NULL);
+  experiment_throughput(throughput_cfg);
 
   MPI_Barrier(MPI_COMM_WORLD);
-  experiment_delay(MPI_Send, MPI_Recv, "Delay std");
+  experiment_delay(delay_cfg);
+
   // experiment_delay(MPI_Bsend, MPI_Recv, "Delay buff");
 
+  teardown_global_state();
   MPI_Finalize();
   return 0;
 }
