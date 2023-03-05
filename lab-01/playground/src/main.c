@@ -83,6 +83,8 @@ void experiment_throughput(ExperimentConfig cfg) {
     msg_sizes_arr[i] = MSG_MIN_SIZE + i * MSG_SIZE_STEP;
   }
 
+  if (g_rank == 0) printf("Message sizes array size %d\n", msg_sizes_arr_size);
+
 
   // optimistic allocation on stack
   // I'm using single buffer here, as we specify message size when calling send/recv
@@ -95,6 +97,7 @@ void experiment_throughput(ExperimentConfig cfg) {
   for (int i = 0; i < msg_sizes_arr_size; ++i) {
     MPI_Barrier(MPI_COMM_WORLD);
     int msg_size = msg_sizes_arr[i];
+    if (g_rank == 0) printf("Doing computation for msg_size: %d\n", msg_size);
     
     start_time = MPI_Wtime() * S_TO_MS_FACTOR;
     for (int message_id = 0; i < ITERATION_COUNT; ++message_id) {
