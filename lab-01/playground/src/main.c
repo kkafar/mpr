@@ -9,19 +9,23 @@
 #define ITERATION_COUNT 10
 #endif
 
-#define STRING_UNKNOWN_LENGTH -1
+// in bytes
+#ifndef MSG_MIN_SIZE
+#define MSG_MIN_SIZE 1024
+#endif
+
+#ifndef MSG_MAX_SIZE
+#define MSG_MAX_SIZE 1024
+#endif
+
+#ifndef MSG_SIZE_STEP
+#define MSG_SIZE_STEP 1024
+#endif
 
 #define S_TO_MS_FACTOR 1e6
 
-
 typedef int (*FnSendHandle)(const void *, int, MPI_Datatype, int, int, MPI_Comm);
 typedef int (*FnRecvHanlde)(void *, int, MPI_Datatype, int, int, MPI_Comm, MPI_Status *);
-
-typedef struct String {
-  char * data;
-  size_t len;
-  size_t capacity;
-} String;
 
 typedef struct ExperimentConfig {
   char *name; // non owning
@@ -32,21 +36,8 @@ typedef struct ExperimentConfig {
   void *params; // non owning
 } ExperimentConfig;
 
-
-bool string_init(String *str, char *mem, const size_t len, const size_t capacity) {
-  str->data = mem;
-  str->len = len;
-  str->capacity = capacity;
-  return true;
-}
-
-bool string_dealloc(String *str) {
-  free(str->data);
-  return true;
-}
-
-String g_hostname;
-int g_rank, g_size;
+char g_hostname[MPI_MAX_PROCESSOR_NAME];
+int g_rank, g_size, g_hostname_len;
 
 bool init_global_state(void) {
   assert((MPI_Comm_rank(MPI_COMM_WORLD, &g_rank) == MPI_SUCCESS) && "Valid rank returned");
@@ -57,30 +48,82 @@ bool init_global_state(void) {
     printf("Failed to allocate memory for processor name in process %d\n", g_rank);
     return false;
   }
-  string_init(&g_hostname, mem, STRING_UNKNOWN_LENGTH, MPI_MAX_PROCESSOR_NAME);
-
-  assert((MPI_Get_processor_name(g_hostname.data, (int *)&g_hostname.len) == MPI_SUCCESS) && "Valid processor name");
-
+  assert((MPI_Get_processor_name(g_hostname, &g_hostname_len) == MPI_SUCCESS) && "Valid processor name");
   return true;
 }
 
 bool teardown_global_state(void) {
-  string_dealloc(&g_hostname);
   return true;
 }
 
 void log_info(char * info) {
   if (info == NULL) info = "";
-  printf("[%s][%d/%d] I %s\n", g_hostname.data, g_rank, g_size, info);
+  printf("[%s][%d/%d] I %s\n", g_hostname, g_rank, g_size, info);
   fflush(stdout);
 }
 
-// pomiary przepustowości w zależności od długości komunikatów
 void experiment_throughput(ExperimentConfig cfg) {
   if (g_rank == 0) log_info(cfg.description);
+
+  FILE *logfile;
+  if (g_rank == 0) {
+    logfile = fopen(cfg.logfilename, "w");
+    if (logfile == NULL) {
+      log_info("Failed to open logfile");
+      return;
+    }
+    fprintf(logfile, "type,msgsize,time,throughput\n");
+  }
+
+  // it should round down
+  int msg_sizes_arr_size = (MSG_MAX_SIZE - MSG_MIN_SIZE) / MSG_SIZE_STEP; 
+  int msg_sizes_arr[msg_sizes_arr_size];
+  
+  for (int i = 0; i < msg_sizes_arr_size; ++i) {
+    msg_sizes_arr[i] = MSG_MIN_SIZE + i * MSG_SIZE_STEP;
+  }
+
+
+  // optimistic allocation on stack
+  // I'm using single buffer here, as we specify message size when calling send/recv
+  // so whole array should not be copied
+  char buffer[MSG_MAX_SIZE];
+  const int cping = 0;
+  const int cpong = 1;
+  double start_time, end_time;
+
+  for (int i = 0; i < msg_sizes_arr_size; ++i) {
+    MPI_Barrier(MPI_COMM_WORLD);
+    int msg_size = msg_sizes_arr[i];
+    
+    start_time = MPI_Wtime() * S_TO_MS_FACTOR;
+    for (int message_id = 0; i < ITERATION_COUNT; ++message_id) {
+      if (g_rank == cping) {
+        cfg.sendhandle(buffer, msg_size, MPI_BYTE, cpong, 0, MPI_COMM_WORLD);
+        cfg.recvhandle(buffer, msg_size, MPI_BYTE, cpong, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      } else if (g_rank == cpong) {
+        cfg.recvhandle(buffer, msg_size, MPI_BYTE, cping, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        cfg.sendhandle(buffer, msg_size, MPI_BYTE, cping, 0, MPI_COMM_WORLD);
+      } else {
+        printf("Dunno what happened\n");
+      }
+    }
+    end_time = MPI_Wtime() * S_TO_MS_FACTOR;
+
+    if (g_rank == cping) {
+      double elapsed_time = end_time - start_time;
+      double single_send_time  = elapsed_time / (ITERATION_COUNT * 2);
+      double throughput = msg_size * 8;
+      fprintf(logfile, "%s,%d,%lf,%lf\n", cfg.name, msg_size, single_send_time, throughput);
+    }
+  }
+
+
+  if (g_rank == 0) {
+    fclose(logfile);
+  }
 }
 
-// pomiary opóźnienia (przepustowość przy małym komunikacie)
 void experiment_delay(ExperimentConfig cfg) {
   if (g_rank == 0) log_info(cfg.description);
 
@@ -120,10 +163,10 @@ void experiment_delay(ExperimentConfig cfg) {
 
   if (g_rank == cping) {
     double elapsed_time = end_time - start_time;
-    double single_send_time = elapsed_time / (ITERATION_COUNT * 2);
-    printf("data,delay Single send time: %lf [ms]\n", single_send_time);
-    fprintf(logfile, "time\n");
-    fprintf(logfile, "%lf\n", single_send_time);
+    double single_send_time  = elapsed_time / (ITERATION_COUNT * 2);
+    printf("Single send time: %lf [ms]\n", single_send_time );
+    fprintf(logfile, "type,time\n");
+    fprintf(logfile, "%s,%lf\n", cfg.name, single_send_time );
   }
 
   if (g_rank == 0) {
@@ -135,10 +178,11 @@ void experiment_delay(ExperimentConfig cfg) {
 int main(int argc, char * argv[]) {
   MPI_Init(&argc, &argv);
   assert((init_global_state() == true) && "Global state initialized");
+  assert((MSG_MIN_SIZE <= MSG_MAX_SIZE && MSG_SIZE_STEP > 0) && "Proper ranges");
   log_info("Initialized");
 
   ExperimentConfig throughput_cfg = {
-    .name = "Throughput std",
+    .name = "std",
     .description = "Throughput std",
     .sendhandle = MPI_Send,
     .recvhandle = MPI_Recv,
@@ -147,7 +191,7 @@ int main(int argc, char * argv[]) {
   };
 
   ExperimentConfig delay_cfg = {
-    .name = "Delay std",
+    .name = "std",
     .description = "Delay std",
     .sendhandle = MPI_Send,
     .recvhandle = MPI_Recv,
