@@ -160,6 +160,15 @@ void experiment_delay(ExperimentConfig cfg) {
 
   double start_time, end_time;
 
+  // Just arbitrarily big buffer
+  const int comm_buffer_size = 32;
+  char comm_buffer[comm_buffer_size];
+
+  // buffered communication
+  if (cfg.name[0] == 'b') {
+    MPI_Buffer_attach(comm_buffer, comm_buffer_size);
+  }
+
   // Synchronizujemy wszystkie procesy tego komunkatora
   MPI_Barrier(MPI_COMM_WORLD);
 
@@ -187,6 +196,11 @@ void experiment_delay(ExperimentConfig cfg) {
 
   if (g_rank == 0) {
     fclose(logfile);
+  }
+
+  if (cfg.name[0] == 'b') {
+    int size;
+    MPI_Buffer_detach(comm_buffer, &size);
   }
 }
 
