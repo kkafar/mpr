@@ -65,7 +65,7 @@ bool init_global_state(void) {
 }
 
 bool teardown_global_state(void) {
-  string_dealloc(&g_hostname);
+  string_dealloc(g_hostname.data);
   return true;
 }
 
