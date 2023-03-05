@@ -5,10 +5,6 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#ifndef CONFIG_CODE
-#define CONFIG_CODE -1
-#endif
-
 #ifndef ITERATION_COUNT
 #define ITERATION_COUNT 10
 #endif
@@ -58,28 +54,25 @@ bool init_global_state(void) {
   return true;
 }
 
-void print_process_info(void) {
-  printf("Hostname: %s, Process: %d, Total Process Count: %d, Config codename: %d\n", g_hostname.data, g_rank, g_size, CONFIG_CODE);
+void log_info(char * info) {
+  if (info == NULL) info = "";
+  printf("[%s][%d/%d] I %s\n", g_hostname.data, g_rank, g_size, info);
   fflush(stdout);
 }
 
 // pomiary przepustowości w zależności od długości komunikatów
-void experiment_throughput(FnSendHandle send_fn, FnRecvHanlde recv_fn) {
-  printf("Starting EXP 1 on process: %d\n", g_rank);
-  printf("Ending   EXP 1 on process: %d\n", g_rank);
+void experiment_throughput(FnSendHandle send_fn, FnRecvHanlde recv_fn, char *description) {
+  log_info(description);
 }
 
 // pomiary opóźnienia (przepustowość przy małym komunikacie)
-void experiment_delay(FnSendHandle send_fn, FnRecvHanlde recv_fn) {
-  printf("Starting EXP 2 on process %d\n", g_rank);
+void experiment_delay(FnSendHandle send_fn, FnRecvHanlde recv_fn, char *description) {
+  if (g_rank == 0) log_info(description);
 
   const int cping = 0;
   const int cpong = 1;
-  const char communication_type[] = "Standard";
 
   char payload = 'a';
-
-  const int iteration_count = ITERATION_COUNT;
 
   double start_time, end_time;
 
@@ -87,7 +80,7 @@ void experiment_delay(FnSendHandle send_fn, FnRecvHanlde recv_fn) {
   MPI_Barrier(MPI_COMM_WORLD);
 
   start_time = MPI_Wtime() * S_TO_MS_FACTOR;
-  for (int i = 0; i < iteration_count; ++i) {
+  for (int i = 0; i < ITERATION_COUNT; ++i) {
     if (g_rank == cping) {
       send_fn(&payload, 1, MPI_BYTE, cpong, 0, MPI_COMM_WORLD);
       recv_fn(&payload, 1, MPI_BYTE, cpong, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -103,27 +96,22 @@ void experiment_delay(FnSendHandle send_fn, FnRecvHanlde recv_fn) {
   if (g_rank == cping) {
     double elapsed_time = end_time - start_time;
     double single_send_time = elapsed_time / (ITERATION_COUNT * 2);
-
-    if (g_rank == cping) {
-      printf("Single send time: %lf [ms]\n", single_send_time);
-    }
+    printf("Single send time: %lf [ms]\n", single_send_time);
   }
-
-  printf("Ending   EXP 2 on process: %d\n", g_rank);
 }
 
 
 int main(int argc, char * argv[]) {
   MPI_Init(&argc, &argv);
   assert((init_global_state() == true) && "Global state initialized");
-  print_process_info();
+  log_info(NULL);
 
   MPI_Barrier(MPI_COMM_WORLD);
-  experiment_throughput(MPI_Send, MPI_Recv);
+  experiment_throughput(MPI_Send, MPI_Recv, NULL);
 
   MPI_Barrier(MPI_COMM_WORLD);
-  experiment_delay(MPI_Send, MPI_Recv);
-
+  experiment_delay(MPI_Send, MPI_Recv, "Delay std");
+  experiment_delay(MPI_Bsend, MPI_Recv, "Delay buff");
 
   MPI_Finalize();
   return 0;
