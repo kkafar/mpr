@@ -100,7 +100,7 @@ void experiment_throughput(ExperimentConfig cfg) {
     if (g_rank == 0) printf("Doing computation for msg_size: %d\n", msg_size);
     
     start_time = MPI_Wtime() * S_TO_MS_FACTOR;
-    for (int message_id = 0; i < ITERATION_COUNT; ++message_id) {
+    for (int message_id = 0; message_id < ITERATION_COUNT; ++message_id) {
       if (g_rank == cping) {
         cfg.sendhandle(buffer, msg_size, MPI_BYTE, cpong, 0, MPI_COMM_WORLD);
         cfg.recvhandle(buffer, msg_size, MPI_BYTE, cpong, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
