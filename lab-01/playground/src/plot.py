@@ -23,6 +23,7 @@ if __name__ == "__main__":
 
     throughput_single_node_std_y = throughput_single_node_data[throughput_single_node_data['type'] == 'std']['msgsize']
 
+    # fig, ax = plt.figure(figsize=(12,7))
     plt.plot(
         throughput_single_node_std_y,
         throughput_single_node_data[throughput_single_node_data['type'] == 'std']['throughput'],
@@ -31,6 +32,7 @@ if __name__ == "__main__":
         throughput_single_node_std_y,
         throughput_single_node_data[throughput_single_node_data['type'] == 'buff']['throughput'],
         label='buff single node')
+    # ax.legend()
     # plt.plot(
     #          throughput_single_node_std_y,
     #     throughput_two_nodes_data[throughput_two_nodes_data['type'] == 'std']['throughput'],
@@ -39,6 +41,7 @@ if __name__ == "__main__":
     #          throughput_single_node_std_y,
     #     throughput_two_nodes_data[throughput_two_nodes_data['type'] == 'buff']['throughput'],
     #          label='buff two nodes')
+
     plt.legend()
     plt.show()
 

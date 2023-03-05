@@ -125,7 +125,7 @@ void experiment_throughput(ExperimentConfig cfg) {
     if (g_rank == cping) {
       double elapsed_time = end_time - start_time;
 
-      double throughput = msg_size * 8 * ITERATION_COUNT * 2 / (elapsed_time);
+      double throughput = msg_size * 8.0 * ITERATION_COUNT * 2.0 / (elapsed_time);
       fprintf(logfile, "%s,%d,%lf,%lf\n", cfg.name, msg_size, elapsed_time, throughput);
     }
   }
