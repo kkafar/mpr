@@ -95,7 +95,7 @@ void experiment_throughput(ExperimentConfig cfg) {
   double start_time, end_time;
 
   // Just arbitrarily big buffer
-  const int comm_buffer_size = MSG_MAX_SIZE * 4;
+  const int comm_buffer_size = MSG_MAX_SIZE * 4 + MPI_BSEND_OVERHEAD;
   char comm_buffer[comm_buffer_size];
 
   // buffered communication
@@ -161,7 +161,7 @@ void experiment_delay(ExperimentConfig cfg) {
   double start_time, end_time;
 
   // Just arbitrarily big buffer
-  const int comm_buffer_size = 32;
+  const int comm_buffer_size = 32 + MPI_BSEND_OVERHEAD;
   char comm_buffer[comm_buffer_size];
 
   // buffered communication
