@@ -5,8 +5,8 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#ifndef CONFIG_CODE_NAME
-#define CONFIG_CODE_NAME "UNKNOWN"
+#ifndef CONFIG_CODE
+#define CONFIG_CODE -1
 #endif
 
 #ifndef ITERATION_COUNT
@@ -62,7 +62,7 @@ bool init_global_state(void) {
 }
 
 void print_process_info(void) {
-  printf("Hostname: %s, Process: %d, Total Process Count: %d, Config codename: %s\n", g_hostname.data, g_rank, g_size, CONFIG_CODE_NAME);
+  printf("Hostname: %s, Process: %d, Total Process Count: %d, Config codename: %d\n", g_hostname.data, g_rank, g_size, CONFIG_CODE);
 }
 
 
