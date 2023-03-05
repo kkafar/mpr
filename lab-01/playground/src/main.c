@@ -41,7 +41,7 @@ bool string_init(String *str, char *mem, const size_t len, const size_t capacity
 }
 
 bool string_dealloc(String *str) {
-  free(str);
+  free(str->data);
   return true;
 }
 
@@ -65,7 +65,7 @@ bool init_global_state(void) {
 }
 
 bool teardown_global_state(void) {
-  string_dealloc(g_hostname.data);
+  string_dealloc(&g_hostname);
   return true;
 }
 
