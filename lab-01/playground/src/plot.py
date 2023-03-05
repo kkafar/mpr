@@ -2,47 +2,44 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
-
 if __name__ == "__main__":
-    throughput_single_node_data = pd.read_csv('./throughput-single-node-all.csv')
-    throughput_two_nodes_data = pd.read_csv('./throughput-two-nodes-all.csv')
+    t_sn = pd.read_csv('./throughput-single-node-all.csv')
+    t_tn = pd.read_csv('./throughput-two-nodes-all.csv')
 
-    delay_single_node_data = pd.read_csv('./delay-single-node-all.csv')
-    delay_two_nodes_data = pd.read_csv('./delay-two-nodes-all.csv')
+    d_sn = pd.read_csv('./delay-single-node-all.csv')
+    d_tn = pd.read_csv('./delay-two-nodes-all.csv')
 
-    print(throughput_single_node_data)
-    print(throughput_two_nodes_data)
-    print(delay_single_node_data)
-    print(delay_two_nodes_data)
+    print(t_sn)
+    print(t_tn)
+    print(d_sn)
+    print(d_tn)
 
-    throughput_single_node_std_x = throughput_single_node_data[throughput_single_node_data['type'] == 'std']['throughput']
-    throughput_two_nodes_std_x = throughput_two_nodes_data[throughput_two_nodes_data['type'] == 'std']['throughput']
-    throughput_single_node_buff_x = throughput_single_node_data[throughput_single_node_data['type'] == 'buff']['throughput']
-    throughput_two_nodes_buff_x = throughput_two_nodes_data[throughput_two_nodes_data['type'] == 'buff']['throughput']
+    unit_factor = 1_000_000 / 2 ** 20
+    t_sn_std_x = t_sn[t_sn['type'] == 'std']['throughput'] * unit_factor
+    t_tn_std_x = t_tn[t_tn['type'] == 'std']['throughput'] * unit_factor
+    t_sn_buff_x = t_sn[t_sn['type'] == 'buff']['throughput'] * unit_factor
+    t_tn_buff_x = t_tn[t_tn['type'] == 'buff']['throughput'] * unit_factor
+    t_y = t_tn[t_tn['type'] == 'std']['msgsize'] / 1024
+    t_sn_y = t_sn[t_sn['type'] == 'std']['msgsize'] / 1024
 
-    throughput_single_node_std_y = throughput_single_node_data[throughput_single_node_data['type'] == 'std']['msgsize']
+    fig, ax = plt.subplots(figsize=(12, 7))
+    ax.plot(t_sn_y, t_sn_std_x, label='std single node')
+    ax.plot(t_sn_y, t_sn_buff_x, label='buff single node')
 
-    # fig, ax = plt.figure(figsize=(12,7))
-    plt.plot(
-        throughput_single_node_std_y,
-        throughput_single_node_data[throughput_single_node_data['type'] == 'std']['throughput'],
-        label='std single node')
-    plt.plot(
-        throughput_single_node_std_y,
-        throughput_single_node_data[throughput_single_node_data['type'] == 'buff']['throughput'],
-        label='buff single node')
-    # ax.legend()
-    # plt.plot(
-    #          throughput_single_node_std_y,
-    #     throughput_two_nodes_data[throughput_two_nodes_data['type'] == 'std']['throughput'],
-    #          label='std two nodes')
-    # plt.plot(
-    #          throughput_single_node_std_y,
-    #     throughput_two_nodes_data[throughput_two_nodes_data['type'] == 'buff']['throughput'],
-    #          label='buff two nodes')
+    ax.set_title('throughput(message_size)')
+    ax.set_ylabel('Throughput [Mb / s]')
+    ax.set_xlabel('Message size [KB]')
+    ax.legend()
 
-    plt.legend()
+    fig, ax = plt.subplots(figsize=(12, 7))
+    ax.plot(t_y, t_tn_std_x, label='std two nodes')
+    ax.plot(t_y, t_tn_buff_x, label='buff two nodes')
+
+    ax.set_title('throughput(message_size)')
+    ax.set_ylabel('Throughput [Mb / s]')
+    ax.set_xlabel('Message size [B]')
+    ax.legend()
+
     plt.show()
 
 
