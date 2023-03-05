@@ -111,7 +111,7 @@ int main(int argc, char * argv[]) {
 
   MPI_Barrier(MPI_COMM_WORLD);
   experiment_delay(MPI_Send, MPI_Recv, "Delay std");
-  experiment_delay(MPI_Bsend, MPI_Recv, "Delay buff");
+  // experiment_delay(MPI_Bsend, MPI_Recv, "Delay buff");
 
   MPI_Finalize();
   return 0;
