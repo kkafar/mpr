@@ -76,7 +76,7 @@ void experiment_throughput(ExperimentConfig cfg) {
   }
 
   // it should round down
-  int msg_sizes_arr_size = (MSG_MAX_SIZE - MSG_MIN_SIZE) / MSG_SIZE_STEP; 
+  int msg_sizes_arr_size = (MSG_MAX_SIZE - MSG_MIN_SIZE) / MSG_SIZE_STEP + 1; 
   int msg_sizes_arr[msg_sizes_arr_size];
   
   for (int i = 0; i < msg_sizes_arr_size; ++i) {
