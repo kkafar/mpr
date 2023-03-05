@@ -28,3 +28,6 @@ prepare-data:
 	cat delay-buff-single-node.csv | tail -n +2 >> delay-single-node-all.csv
 	cat delay-std-two-nodes.csv > delay-two-nodes-all.csv
 	cat delay-buff-two-nodes.csv | tail -n +2 >> delay-two-nodes-all.csv
+
+	mkdir -p data
+	mv *-all.csv data/
