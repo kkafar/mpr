@@ -1,5 +1,5 @@
 build-main: main.c
-	mpicc -o main -std=gnu99 main.c -DITERATION_COUNT=2500 -DMSG_MIN_SIZE=1024 -DMSG_MAX_SIZE=40960 -DMSG_SIZE_STEP=1024
+	mpicc -o main -std=gnu99 main.c -DITERATION_COUNT=3000 -DMSG_MIN_SIZE=1024 -DMSG_MAX_SIZE=102400 -DMSG_SIZE_STEP=1024
 
 run-main: build-main
 	mpiexec -machinefile ./allnodes -np 2 ./main
