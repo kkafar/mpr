@@ -108,7 +108,7 @@ void experiment_throughput(ExperimentConfig cfg) {
     int msg_size = msg_sizes_arr[i];
     if (g_rank == 0) printf("Doing computation for msg_size: %d\n", msg_size);
     
-    start_time = MPI_Wtime() * S_TO_MS_FACTOR;
+    start_time = MPI_Wtime() * 1e6;
     for (int message_id = 0; message_id < ITERATION_COUNT; ++message_id) {
       if (g_rank == cping) {
         cfg.sendhandle(buffer, msg_size, MPI_BYTE, cpong, 0, MPI_COMM_WORLD);
@@ -120,13 +120,13 @@ void experiment_throughput(ExperimentConfig cfg) {
         printf("Dunno what happened\n");
       }
     }
-    end_time = MPI_Wtime() * S_TO_MS_FACTOR;
+    end_time = MPI_Wtime() * 1e6;
 
     if (g_rank == cping) {
       double elapsed_time = end_time - start_time;
-      double single_send_time  = elapsed_time / (ITERATION_COUNT * 2);
-      double throughput = msg_size * 8 / single_send_time;
-      fprintf(logfile, "%s,%d,%lf,%lf\n", cfg.name, msg_size, single_send_time, throughput);
+
+      double throughput = msg_size * 8 * ITERATION_COUNT * 2 / (elapsed_time);
+      fprintf(logfile, "%s,%d,%lf,%lf\n", cfg.name, msg_size, elapsed_time, throughput);
     }
   }
 
