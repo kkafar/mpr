@@ -13,15 +13,13 @@
 #define ITERATION_COUNT 10
 #endif
 
-#ifndef KMK_MPI_SEND
-#define KMK_MPI_SEND MPI_Send
-#endif
-
-#ifndef KMK_MPI_RECV
-#define KMK_MPI_RECV MPI_Recv
-#endif
-
 #define STRING_UNKNOWN_LENGTH -1
+
+#define S_TO_MS_FACTOR 1e6
+
+
+typedef int (*FnSendHandle)(const void *, int, MPI_Datatype, int, int, MPI_Comm);
+typedef int (*FnRecvHanlde)(void *, int, MPI_Datatype, int, int, MPI_Comm, MPI_Status *);
 
 typedef struct String {
   char * data;
@@ -40,7 +38,6 @@ bool string_dealloc(String *str) {
   free(str);
   return true;
 }
-
 
 String g_hostname;
 int g_rank, g_size;
@@ -67,13 +64,13 @@ void print_process_info(void) {
 }
 
 // pomiary przepustowości w zależności od długości komunikatów
-void experiment_1(void) {
+void experiment_throughput(FnSendHandle send_fn, FnRecvHanlde recv_fn) {
   printf("Starting EXP 1 on process: %d\n", g_rank);
   printf("Ending   EXP 1 on process: %d\n", g_rank);
 }
 
 // pomiary opóźnienia (przepustowość przy małym komunikacie)
-void experiment_2(void) {
+void experiment_delay(FnSendHandle send_fn, FnRecvHanlde recv_fn) {
   printf("Starting EXP 2 on process %d\n", g_rank);
 
   const int cping = 0;
@@ -89,38 +86,27 @@ void experiment_2(void) {
   // Synchronizujemy wszystkie procesy tego komunkatora
   MPI_Barrier(MPI_COMM_WORLD);
 
-  start_time = MPI_Wtime();
+  start_time = MPI_Wtime() * S_TO_MS_FACTOR;
   for (int i = 0; i < iteration_count; ++i) {
     if (g_rank == cping) {
-
-      // Zaczynamy mierzyć czas
-      // double send_time = MPI_Wtime();
-
-      // Ping zaczyna
-      MPI_Send(&payload, 1, MPI_BYTE, cpong, 0, MPI_COMM_WORLD);
-      MPI_Recv(&payload, 1, MPI_BYTE, cpong, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-      // double receive_time = MPI_Wtime();
-
-      // printf("Ping received data for %d time\n", i);
-      
+      send_fn(&payload, 1, MPI_BYTE, cpong, 0, MPI_COMM_WORLD);
+      recv_fn(&payload, 1, MPI_BYTE, cpong, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     } else if (g_rank == cpong) {
-      MPI_Recv(&payload, 1, MPI_BYTE, cping, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("Pong received data for %d time\n", i);
-      MPI_Send(&payload, 1, MPI_BYTE, cping, 0, MPI_COMM_WORLD);
+      recv_fn(&payload, 1, MPI_BYTE, cping, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      send_fn(&payload, 1, MPI_BYTE, cping, 0, MPI_COMM_WORLD);
     } else {
       printf("Dunno what happened\n");
     }
   }
-  end_time = MPI_Wtime();
-
-  double elapsed_time = end_time - start_time;
-  double single_send_time = elapsed_time / (ITERATION_COUNT * 2);
-
-  printf("Time elapsed on %d: %lf\n", g_rank, end_time - start_time);
+  end_time = MPI_Wtime() * S_TO_MS_FACTOR;
 
   if (g_rank == cping) {
-    printf("Single send time: %lf\n", single_send_time);
+    double elapsed_time = end_time - start_time;
+    double single_send_time = elapsed_time / (ITERATION_COUNT * 2);
+
+    if (g_rank == cping) {
+      printf("Single send time: %lf [ms]\n", single_send_time);
+    }
   }
 
   printf("Ending   EXP 2 on process: %d\n", g_rank);
@@ -133,10 +119,10 @@ int main(int argc, char * argv[]) {
   print_process_info();
 
   MPI_Barrier(MPI_COMM_WORLD);
-  experiment_1();
+  experiment_throughput(MPI_Send, MPI_Recv);
 
   MPI_Barrier(MPI_COMM_WORLD);
-  experiment_2();
+  experiment_delay(MPI_Send, MPI_Recv);
 
 
   MPI_Finalize();
