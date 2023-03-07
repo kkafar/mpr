@@ -39,6 +39,17 @@ double estimate_pi(size_t point_count) {
   return (double)hit_count / point_count * 4; 
 }
 
+// Naive avg function
+double daverage(double *arr, size_t size) {
+  double acc = 0.0;  
+  // This sum is potentially very unstable
+  for (size_t i = 0; i < size; ++i) {
+    acc += arr[i];
+  }
+  // This division is potentially very unstable
+  return acc / size;
+}
+
 void dump_env(int argc, char *argv[]) {
   printf("--------------------------------\n");
   printf("Dumping environment of process %d running on %s\n", g_rank, g_hostname);
@@ -84,6 +95,11 @@ int main(int argc, char * argv[]) {
     for (size_t rid = 0; rid < g_size; ++rid) {
       printf("%ld: %lf\n", rid, results[rid]);
     }
+
+    double average = daverage(results, g_size);
+    printf("%lf\n", average);
+
+    // need to take average
   } else {
     MPI_Send(&pi_estimate, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
   }
