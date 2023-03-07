@@ -29,9 +29,9 @@ double estimate_pi(size_t point_count) {
     // Hey! I want to avoid this division!
     // How do I generate 
     x = drand48();
-    x = drand48();
+    y = drand48();
 
-    if (x * x + y <= 1) {
+    if (x * x + y * y <= 1) {
       ++hit_count;
     }
   }
