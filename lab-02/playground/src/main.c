@@ -55,7 +55,7 @@ void dump_env(int argc, char *argv[]) {
 int main(int argc, char * argv[]) {
   MPI_Init(&argc, &argv);
   init_global_state();
-  srand48(time(NULL) + g_rank);
+  srand48(time(NULL) + g_rank * 31);
 
   if (g_rank == 0) {
     dump_env(argc, argv);
