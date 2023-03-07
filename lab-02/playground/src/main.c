@@ -12,17 +12,12 @@ int g_rank, g_size, g_hostname_len;
 bool init_global_state(void) {
   assert((MPI_Comm_rank(MPI_COMM_WORLD, &g_rank) == MPI_SUCCESS) && "Valid rank returned");
   assert((MPI_Comm_size(MPI_COMM_WORLD, &g_size) == MPI_SUCCESS) && "Valid size returned");
-
-  char *mem = (char *) malloc(sizeof(char) * MPI_MAX_PROCESSOR_NAME);
-  if (mem == NULL) {
-    printf("Failed to allocate memory for processor name in process %d\n", g_rank);
-    return false;
-  }
   assert((MPI_Get_processor_name(g_hostname, &g_hostname_len) == MPI_SUCCESS) && "Valid processor name");
   return true;
 }
 
-bool teardown_global_state(void) {
+inline bool teardown_global_state(void) {
+
   return true;
 }
 
@@ -33,10 +28,10 @@ double estimate_pi(size_t point_count) {
   for (size_t i = 0; i < point_count; ++i) {
     // Hey! I want to avoid this division!
     // How do I generate 
-    x = (double)rand() / RAND_MAX;
-    y = (double)rand() / RAND_MAX;
+    x = drand48();
+    x = drand48();
 
-    if (x * x + y * y <= 1) {
+    if (x * x + y <= 1) {
       ++hit_count;
     }
   }
@@ -44,17 +39,35 @@ double estimate_pi(size_t point_count) {
   return (double)hit_count / point_count * 4; 
 }
 
+void dump_env(int argc, char *argv[]) {
+  printf("--------------------------------\n");
+  printf("Dumping environment of process %d running on %s\n", g_rank, g_hostname);
+  for (int i = 0; i < argc; ++i) {
+    printf("%d: %s\n", i, argv[i]);
+  }
+  printf("--------------------------------\n");
+}
+
+
+// Scatter i Gather -- do sprawdzenia!!!
+// Jest też coś takeigo jak Reduce
+
 int main(int argc, char * argv[]) {
   MPI_Init(&argc, &argv);
   init_global_state();
+  srand48(time(NULL) + g_rank);
 
-  srand(time(NULL));
+  if (g_rank == 0) {
+    dump_env(argc, argv);
+  }
 
-  double pi_estimate = estimate_pi(100000);
-
-  // printf("%lf\n", pi_estimate)MPI_Datatype datatype;
+  double start_time, elapsed_time;
 
   MPI_Barrier(MPI_COMM_WORLD);
+
+  start_time = MPI_Wtime() * 1e6;
+  double pi_estimate = estimate_pi(100000);
+  elapsed_time = MPI_Wtime() * 1e6 - start_time;
 
   if (g_rank == 0) {
     // I want to store them in the array,
