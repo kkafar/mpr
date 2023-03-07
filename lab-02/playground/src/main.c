@@ -6,11 +6,17 @@
 #include <assert.h>
 #include <time.h>
 #include <stdint.h>
+#include <string.h>
 
 typedef uintmax_t Size_t;
 
+typedef struct ProcessArgs {
+  Size_t point_count;
+} ProcessArgs;
+
 char g_hostname[MPI_MAX_PROCESSOR_NAME];
 int g_rank, g_size, g_hostname_len;
+ProcessArgs g_pargs;
 
 bool init_global_state(void) {
   assert((MPI_Comm_rank(MPI_COMM_WORLD, &g_rank) == MPI_SUCCESS) && "Valid rank returned");
@@ -20,7 +26,6 @@ bool init_global_state(void) {
 }
 
 inline bool teardown_global_state(void) {
-
   return true;
 }
 
@@ -55,9 +60,10 @@ double daverage(double *arr, Size_t size) {
 
 void dump_env(int argc, char *argv[]) {
   printf("--------------------------------\n");
-  printf("Dumping environment of process %d running on %s\n", g_rank, g_hostname);
+  printf("Host: %s\n", g_hostname);
+  printf("Process: %d\nArgs:\n", g_rank);
   for (int i = 0; i < argc; ++i) {
-    printf("%d: %s\n", i, argv[i]);
+    printf("\t%d: %s\n", i, argv[i]);
   }
   printf("sizeof(long): %ld\n", sizeof(long));
   printf("sizeof(long long): %ld\n", sizeof(long long));
@@ -65,9 +71,19 @@ void dump_env(int argc, char *argv[]) {
   printf("sizeof(size_t): %ld\n", sizeof(size_t));
   printf("sizeof(uint64_t): %ld\n", sizeof(uint64_t));
   printf("sizeof(uintmax_t): %ld\n", sizeof(uintmax_t));
+  printf("Point count: %ld\n", g_pargs.point_count);
   printf("--------------------------------\n");
 }
 
+bool parse_args(int argc, char *argv[], ProcessArgs *output) {
+  // Right now the program expects exactly one argument - point count
+  if (argc != 2) {
+    output->point_count = 1e5;
+    return false;
+  }
+  output->point_count = strtoll(argv[1], NULL, 10);
+  return true;
+}
 
 // Scatter i Gather -- do sprawdzenia!!!
 // Jest też coś takeigo jak Reduce
@@ -75,6 +91,7 @@ void dump_env(int argc, char *argv[]) {
 int main(int argc, char * argv[]) {
   MPI_Init(&argc, &argv);
   init_global_state();
+  parse_args(argc, argv, &g_pargs);
   srand48(time(NULL) + g_rank * 31);
 
   if (g_rank == 0) {
@@ -86,7 +103,7 @@ int main(int argc, char * argv[]) {
   MPI_Barrier(MPI_COMM_WORLD);
 
   start_time = MPI_Wtime() * 1e6;
-  double pi_estimate = estimate_pi(100000);
+  double pi_estimate = estimate_pi(g_pargs.point_count);
   elapsed_time = MPI_Wtime() * 1e6 - start_time;
 
   if (g_rank == 0) {
