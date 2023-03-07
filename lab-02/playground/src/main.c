@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <time.h>
+#include <stdint.h>
 
 char g_hostname[MPI_MAX_PROCESSOR_NAME];
 int g_rank, g_size, g_hostname_len;
@@ -56,6 +57,12 @@ void dump_env(int argc, char *argv[]) {
   for (int i = 0; i < argc; ++i) {
     printf("%d: %s\n", i, argv[i]);
   }
+  printf("sizeof(long): %ld\n", sizeof(long));
+  printf("sizeof(long long): %ld\n", sizeof(long long));
+  printf("sizeof(double): %ld\n", sizeof(double));
+  printf("sizeof(size_t): %ld\n", sizeof(size_t));
+  printf("sizeof(uint64_t): %ld\n", sizeof(uint64_t));
+  printf("sizeof(uintmax_t): %ld\n", sizeof(uintmax_t));
   printf("--------------------------------\n");
 }
 
