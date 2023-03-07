@@ -7,6 +7,8 @@
 #include <time.h>
 #include <stdint.h>
 
+typedef uintmax_t Size_t;
+
 char g_hostname[MPI_MAX_PROCESSOR_NAME];
 int g_rank, g_size, g_hostname_len;
 
@@ -22,11 +24,11 @@ inline bool teardown_global_state(void) {
   return true;
 }
 
-double estimate_pi(size_t point_count) {
+double estimate_pi(Size_t point_count) {
   double x, y;
-  size_t hit_count = 0;
+  Size_t hit_count = 0;
 
-  for (size_t i = 0; i < point_count; ++i) {
+  for (Size_t i = 0; i < point_count; ++i) {
     // Hey! I want to avoid this division!
     // How do I generate 
     x = drand48();
@@ -41,10 +43,10 @@ double estimate_pi(size_t point_count) {
 }
 
 // Naive avg function
-double daverage(double *arr, size_t size) {
+double daverage(double *arr, Size_t size) {
   double acc = 0.0;  
   // This sum is potentially very unstable
-  for (size_t i = 0; i < size; ++i) {
+  for (Size_t i = 0; i < size; ++i) {
     acc += arr[i];
   }
   // This division is potentially very unstable
@@ -99,7 +101,7 @@ int main(int argc, char * argv[]) {
       MPI_Recv(&results[worker_id], 1, MPI_DOUBLE, worker_id, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
-    for (size_t rid = 0; rid < g_size; ++rid) {
+    for (Size_t rid = 0; rid < g_size; ++rid) {
       printf("%ld: %lf\n", rid, results[rid]);
     }
 
