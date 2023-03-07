@@ -69,7 +69,7 @@ int main(int argc, char * argv[]) {
     }
 
     for (size_t rid = 0; rid < g_size; ++rid) {
-      printf("Result from %ld: %lf\n", rid, results[rid]);
+      printf("%ld: %lf\n", rid, results[rid]);
     }
   } else {
     MPI_Send(&pi_estimate, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
