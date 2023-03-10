@@ -3,4 +3,9 @@
 build/
 .vscode/
 .cache
+*.csv
+.venv/
+*.png
+*.md
+*.pdf
 
