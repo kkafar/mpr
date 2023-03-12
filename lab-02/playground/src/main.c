@@ -81,7 +81,11 @@ bool parse_args(int argc, char *argv[], ProcessArgs *output) {
     output->point_count = 1e5;
     return false;
   }
-  output->point_count = strtoll(argv[1], NULL, 10);
+  Size_t total_point_count = strtoll(argv[1], NULL, 10);
+  assert((total_point_count > 0) && "Point count must be > 0");
+
+  output->point_count = total_point_count / g_size;
+
   return true;
 }
 
