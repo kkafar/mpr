@@ -26,7 +26,7 @@ if __name__ == "__main__":
     ax.plot(t_sn_y, t_sn_std_x, label='std single node')
     ax.plot(t_sn_y, t_sn_buff_x, label='buff single node')
 
-    ax.set_title('throughput(message_size)')
+    ax.set_title('throughput(message_size) - single node')
     ax.set_ylabel('Throughput [Mb / s]')
     ax.set_xlabel('Message size [KB]')
     ax.legend()
@@ -35,9 +35,9 @@ if __name__ == "__main__":
     ax.plot(t_y, t_tn_std_x, label='std two nodes')
     ax.plot(t_y, t_tn_buff_x, label='buff two nodes')
 
-    ax.set_title('throughput(message_size)')
+    ax.set_title('throughput(message_size) - two nodes')
     ax.set_ylabel('Throughput [Mb / s]')
-    ax.set_xlabel('Message size [B]')
+    ax.set_xlabel('Message size [KB]')
     ax.legend()
 
     plt.show()
