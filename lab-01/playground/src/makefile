@@ -1,5 +1,5 @@
 build-main: main.c
-	mpicc -o main -std=gnu99 main.c -DITERATION_COUNT=3000 -DMSG_MIN_SIZE=1024 -DMSG_MAX_SIZE=102400 -DMSG_SIZE_STEP=1024
+	mpicc -o main -std=gnu99 main.c -DITERATION_COUNT=1000 -DMSG_MIN_SIZE=1024 -DMSG_MAX_SIZE=512000 -DMSG_SIZE_STEP=1024
 
 run-main: build-main
 	mpiexec -machinefile ./allnodes -np 2 ./main
@@ -31,3 +31,4 @@ prepare-data:
 
 	mkdir -p data
 	mv *-all.csv data/
+
