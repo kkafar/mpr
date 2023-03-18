@@ -19,6 +19,12 @@ then
   exit 1
 fi
 
+if ! command -v tee &> /dev/null
+then
+  echo "Looks like tee binary is missing... Aborting"
+  exit 1
+fi
+
 # Detect on what machine we're running.
 # Currently it is up to user to specify env var IS_ARES=1
 # in case the script is run on Ares
@@ -31,6 +37,13 @@ else
   echo "Execution context: vCluster"
   execution_context="vCluster"
 fi
+
+if [[ ! -z "${MACHINEFILE}" ]]
+then
+  machinefilename="${MACHINEFILE}"
+fi
+
+echo "Running with machinefile: ${machinefilename}"
 
 # Ensure that output output directory exists
 mkdir -p data/{raw,processed}
@@ -48,7 +61,7 @@ do
       # mpiexec -np ${cur_proc_count} "./${progname}" "${cur_point_count}" > "${output_raw}/proc_${cur_proc_count}_point_${cur_point_count}.csv"
     else
       echo "[${execution_context}] Point count: ${cur_point_count}, process count: ${cur_proc_count}"
-      # mpiexec -machinefile "./${machinefilename}" -np ${cur_proc_count} "./${progname}" "${cur_point_count}" > "${output_raw}/proc_${cur_proc_count}_point_${cur_point_count}.csv"
+      mpiexec -machinefile "./${machinefilename}" -np ${cur_proc_count} "./${progname}" "${cur_point_count}" | tee "${output_raw}/proc_${cur_proc_count}_point_${cur_point_count}.csv"
     fi
   done
 done
