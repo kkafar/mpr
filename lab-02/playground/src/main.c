@@ -109,13 +109,13 @@ int main(int argc, char * argv[]) {
 
   parse_args(argc, argv, &g_pargs);
 
-  if (g_rank == 0) {
+  // if (g_rank == 0) {
     reduce_buffer = (double *) calloc(g_size, sizeof(double));
     if (reduce_buffer == NULL) {
       printf("Failed to allocate buffer of size %ld\n", g_size * sizeof(double));
       goto CLEANUP;
     }
-  }
+  // }
 
   double pi_estimate = estimate_pi(g_pargs.point_count);
 
