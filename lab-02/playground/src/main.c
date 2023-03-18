@@ -34,28 +34,12 @@ double estimate_pi(Size_t point_count) {
   Size_t hit_count = 0;
 
   for (Size_t i = 0; i < point_count; ++i) {
-    // Hey! I want to avoid this division!
-    // How do I generate 
     x = drand48();
     y = drand48();
-
-    if (x * x + y * y <= 1) {
-      ++hit_count;
-    }
+    if (x * x + y * y <= 1) ++hit_count;
   }
 
   return (double)hit_count / point_count * 4; 
-}
-
-// Naive avg function
-double daverage(double *arr, Size_t size) {
-  double acc = 0.0;  
-  // This sum is potentially very unstable
-  for (Size_t i = 0; i < size; ++i) {
-    acc += arr[i];
-  }
-  // This division is potentially very unstable
-  return acc / size;
 }
 
 void dump_env(int argc, char *argv[]) {
@@ -101,7 +85,6 @@ int main(int argc, char * argv[]) {
   }
 
   double start_time, elapsed_time;
-  // double *reduce_buffer = NULL;
   double reduce_buffer;
 
   MPI_Barrier(MPI_COMM_WORLD);
@@ -110,17 +93,9 @@ int main(int argc, char * argv[]) {
     start_time = MPI_Wtime() * 1e6;
   }
 
-  // I parse the args for the second time here to have
-  // some sequential operations here
+  // Parsing args here for the second time just to have
+  // some sequential operations
   parse_args(argc, argv, &g_pargs);
-
-  // if (g_rank == 0) {
-  //   reduce_buffer = (double *) calloc(g_size, sizeof(double));
-  //   if (reduce_buffer == NULL) {
-  //     printf("Failed to allocate buffer of size %ld\n", g_size * sizeof(double));
-  //     goto CLEANUP;
-  //   }
-  // }
 
   double pi_estimate = estimate_pi(g_pargs.point_count);
 
@@ -129,10 +104,10 @@ int main(int argc, char * argv[]) {
   if (g_rank == 0) {
     double average = reduce_buffer / g_size;
     elapsed_time = MPI_Wtime() * 1e6 - start_time;
-    printf("%lf,%lf\n", average, elapsed_time);
+    printf("proc_count,point_count,avg_pi,time\n");
+    printf("%d,%ld,%lf,%lf\n", g_size, g_pargs.point_count, average, elapsed_time);
   }
 
-CLEANUP:
   teardown_global_state();
   MPI_Finalize();
   return 0;
