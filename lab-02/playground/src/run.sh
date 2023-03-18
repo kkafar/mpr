@@ -12,7 +12,7 @@ echo "Running run.sh script from dir: $(pwd)"
 
 print_help ()
 {
-  echo -e "Available params:\n\t-h -- show this help\n\t-b BINARY -- specify program to run (defaults to 'main')\n\t-c/-C -- whether to compile (uses make)\n\t-d/-D -- whether to process data\n\t-r/-R -- whether to run\n\t-a/-A -- run all stages / none; specify it always first\n\t-m MACHINEFILE"
+  echo -e "Available params:\n\t-h -- show this help\n\t-b BINARY -- specify program to run (defaults to 'main')\n\t-c/-C -- whether to compile (uses make)\n\t-d/-D -- whether to process data\n\t-r/-R -- whether to run\n\t-a/-A -- run all stages / none; specify it always first\n\t-m MACHINEFILE\n\t-x/-X -- ares / not ares execution context\n\t-t -- run with test params"
 }
 
 # possible params
@@ -20,24 +20,25 @@ progname="main"
 machinefilename="nodes"
 
 # Final run
-# point_counts=(10 100 1000 10000 100000 100000 10000000 100000000 1000000000 10000000000)
-# proc_counts=(1 2 4 6 8 10 12)
+point_counts=(10 100 1000 10000 100000 100000 10000000 100000000 1000000000 10000000000)
+proc_counts=(1 2 4 6 8 10 12)
 
 # Test run
-point_counts=(10 100 1000)
-proc_counts=(1 2 4 6 8 10 12)
+point_counts_test=(10 100 1000)
+proc_counts_test=(1 2 4 6 8 10 12)
 
 should_process_data=1 # 1 means 'yes'
 should_compile=1
 should_run=1
+is_test=0
 
 # execution context
-is_ares=0
-execution_context="vCluster"
+is_ares=1
+execution_context="Ares"
 
 # https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash
 OPTIND=1
-opt_str="haAb:dDm:cCrR"
+opt_str="haAb:dDm:cCrRxXt"
 
 while getopts "${opt_str}" opt
 do
@@ -72,6 +73,15 @@ do
       ;;
     R) should_run=0
       ;;
+    x) is_ares=1
+      ;;
+    X) is_ares=0
+      ;;
+    t) 
+      is_test=1
+      point_counts=${point_counts_test}
+      proc_counts=${proc_counts_test}
+      ;;
   esac
 done
 
@@ -80,15 +90,12 @@ shift $((OPTIND-1))
 # Detect on what machine we're running.
 # Currently it is up to user to specify env var IS_ARES=1
 # in case the script is run on Ares
-if [[ ! -z "${IS_ARES}" ]]
+if [[ ${is_ares} -eq 0 ]]
 then
-  echo "Execution context: Ares"
-  is_ares=1
-  execution_context="Ares"
-else
-  echo "Execution context: vCluster"
   execution_context="vCluster"
 fi
+
+echo "Running with execution context: ${execution_context}"
 
 if [[ ${is_ares} -eq 1 ]]
 then
