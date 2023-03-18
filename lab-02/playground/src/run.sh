@@ -13,7 +13,8 @@ is_ares=1
 execution_context="vCluster"
 
 # Chceck whether necessary binaries are installed
-if ! command -v mpiexec &> /dev/null then
+if ! command -v mpiexec &> /dev/null
+then
   echo "Looks like mpiexec binary is missing... Aborting"
   exit 1
 fi
@@ -21,7 +22,8 @@ fi
 # Detect on what machine we're running.
 # Currently it is up to user to specify env var IS_ARES=1
 # in case the script is run on Ares
-if [[ -z "${IS_ARES}" ]]; then
+if [[ -z "${IS_ARES}" ]]
+then
   echo "Execution context: Ares"
   is_ares=0
   execution_context="Ares"
