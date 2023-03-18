@@ -22,7 +22,7 @@ fi
 # Detect on what machine we're running.
 # Currently it is up to user to specify env var IS_ARES=1
 # in case the script is run on Ares
-if [[ -z "${IS_ARES}" ]]
+if [[ ! -z "${IS_ARES}" ]]
 then
   echo "Execution context: Ares"
   is_ares=0
