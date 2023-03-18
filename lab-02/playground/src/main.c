@@ -11,6 +11,7 @@
 typedef uintmax_t Size_t;
 
 typedef struct ProcessArgs {
+  Size_t total_point_count;
   Size_t point_count;
 } ProcessArgs;
 
@@ -68,6 +69,7 @@ bool parse_args(int argc, char *argv[], ProcessArgs *output) {
   Size_t total_point_count = strtoll(argv[1], NULL, 10);
   assert((total_point_count > 0) && "Point count must be > 0");
 
+  output->total_point_count = total_point_count;
   output->point_count = total_point_count / g_size;
 
   return true;
@@ -104,8 +106,8 @@ int main(int argc, char * argv[]) {
   if (g_rank == 0) {
     double average = reduce_buffer / g_size;
     elapsed_time = MPI_Wtime() * 1e6 - start_time;
-    printf("proc_count,point_count,avg_pi,time\n");
-    printf("%d,%ld,%lf,%lf\n", g_size, g_pargs.point_count, average, elapsed_time);
+    printf("proc_count,total_point_count,point_count,avg_pi,time\n");
+    printf("%d,%ld,%ld,%lf,%lf\n", g_size, g_pargs.total_point_count,g_pargs.point_count, average, elapsed_time);
   }
 
   teardown_global_state();
