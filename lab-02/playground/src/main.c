@@ -94,12 +94,15 @@ int main(int argc, char * argv[]) {
   init_global_state();
   srand48(time(NULL) + g_rank * 31);
 
+  parse_args(argc, argv, &g_pargs);
+
   if (g_rank == 0) {
     dump_env(argc, argv);
   }
 
   double start_time, elapsed_time;
-  double *reduce_buffer = NULL;
+  // double *reduce_buffer = NULL;
+  double reduce_buffer;
 
   MPI_Barrier(MPI_COMM_WORLD);
 
@@ -107,22 +110,24 @@ int main(int argc, char * argv[]) {
     start_time = MPI_Wtime() * 1e6;
   }
 
+  // I parse the args for the second time here to have
+  // some sequential operations here
   parse_args(argc, argv, &g_pargs);
 
   // if (g_rank == 0) {
-    reduce_buffer = (double *) calloc(g_size, sizeof(double));
-    if (reduce_buffer == NULL) {
-      printf("Failed to allocate buffer of size %ld\n", g_size * sizeof(double));
-      goto CLEANUP;
-    }
+  //   reduce_buffer = (double *) calloc(g_size, sizeof(double));
+  //   if (reduce_buffer == NULL) {
+  //     printf("Failed to allocate buffer of size %ld\n", g_size * sizeof(double));
+  //     goto CLEANUP;
+  //   }
   // }
 
   double pi_estimate = estimate_pi(g_pargs.point_count);
 
-  MPI_Reduce(&pi_estimate, reduce_buffer, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&pi_estimate, &reduce_buffer, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
   
   if (g_rank == 0) {
-    double average = daverage(reduce_buffer, g_pargs.point_count);
+    double average = reduce_buffer / g_size;
     elapsed_time = MPI_Wtime() * 1e6 - start_time;
     printf("%lf,%lf\n", average, elapsed_time);
   }
