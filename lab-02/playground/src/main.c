@@ -18,7 +18,7 @@ char g_hostname[MPI_MAX_PROCESSOR_NAME];
 int g_rank, g_size, g_hostname_len;
 ProcessArgs g_pargs;
 
-bool init_global_state(void) {
+inline bool init_global_state(void) {
   assert((MPI_Comm_rank(MPI_COMM_WORLD, &g_rank) == MPI_SUCCESS) && "Valid rank returned");
   assert((MPI_Comm_size(MPI_COMM_WORLD, &g_size) == MPI_SUCCESS) && "Valid size returned");
   assert((MPI_Get_processor_name(g_hostname, &g_hostname_len) == MPI_SUCCESS) && "Valid processor name");
@@ -89,13 +89,9 @@ bool parse_args(int argc, char *argv[], ProcessArgs *output) {
   return true;
 }
 
-// Scatter i Gather -- do sprawdzenia!!!
-// Jest też coś takeigo jak Reduce
-
 int main(int argc, char * argv[]) {
   MPI_Init(&argc, &argv);
   init_global_state();
-  parse_args(argc, argv, &g_pargs);
   srand48(time(NULL) + g_rank * 31);
 
   if (g_rank == 0) {
@@ -103,37 +99,35 @@ int main(int argc, char * argv[]) {
   }
 
   double start_time, elapsed_time;
+  double *reduce_buffer = NULL;
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  start_time = MPI_Wtime() * 1e6;
-  double pi_estimate = estimate_pi(g_pargs.point_count);
-  elapsed_time = MPI_Wtime() * 1e6 - start_time;
-
   if (g_rank == 0) {
-    // I want to store them in the array,
-    // and later try to avoid imprecisions 
-    // resulting from adding numbers of vastly
-    // different values
-    double *results = (double *)calloc(g_size, sizeof(double));
-    results[0] = pi_estimate;
-
-    for (int worker_id = 1; worker_id < g_size; ++worker_id) {
-      MPI_Recv(&results[worker_id], 1, MPI_DOUBLE, worker_id, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    }
-
-    for (Size_t rid = 0; rid < g_size; ++rid) {
-      printf("%ld: %lf\n", rid, results[rid]);
-    }
-
-    double average = daverage(results, g_size);
-    printf("%lf\n", average);
-
-    // need to take average
-  } else {
-    MPI_Send(&pi_estimate, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+    start_time = MPI_Wtime() * 1e6;
   }
 
+  parse_args(argc, argv, &g_pargs);
+
+  if (g_rank == 0) {
+    reduce_buffer = (double *) calloc(g_size, sizeof(double));
+    if (reduce_buffer == NULL) {
+      printf("Failed to allocate buffer of size %ld\n", g_size * sizeof(double));
+      goto CLEANUP;
+    }
+  }
+
+  double pi_estimate = estimate_pi(g_pargs.point_count);
+
+  MPI_Reduce(&pi_estimate, reduce_buffer, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  
+  if (g_rank == 0) {
+    double average = daverage(reduce_buffer, g_pargs.point_count);
+    elapsed_time = MPI_Wtime() * 1e6 - start_time;
+    printf("%lf,%lf\n", average, elapsed_time);
+  }
+
+CLEANUP:
   teardown_global_state();
   MPI_Finalize();
   return 0;
