@@ -10,8 +10,8 @@ print_help ()
 # possible params
 progname="main"
 machinefilename="nodes"
-point_counts=(100000 10000000 100000000)
-proc_counts=(1 2 4 8 12)
+point_counts=(10 100 1000 10000 100000 100000 10000000 100000000 1000000000 10000000000)
+proc_counts=(1 2 4 6 8 10 12)
 
 should_process_data=1 # 1 means 'yes'
 should_compile=1
