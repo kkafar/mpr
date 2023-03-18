@@ -80,9 +80,9 @@ int main(int argc, char * argv[]) {
 
   parse_args(argc, argv, &g_pargs);
 
-  if (g_rank == 0) {
-    dump_env(argc, argv);
-  }
+  // if (g_rank == 0) {
+  //   dump_env(argc, argv);
+  // }
 
   double start_time, elapsed_time;
   double reduce_buffer;
