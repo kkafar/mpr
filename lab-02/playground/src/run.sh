@@ -140,7 +140,7 @@ then
     exit 1
   fi
 
-  raw_data="$(ls ${ouput_raw}/"
+  raw_data="$(ls ${ouput_raw}/)"
   echo "Detected files: ${raw_data}"
 
   finaldatafile="${output_processed}/final.csv"
