@@ -4,7 +4,7 @@ echo "Running run.sh script"
 
 print_help ()
 {
-  echo -e "Available params:\n\t-h -- show this help\n\t-b BINARY -- specify program to run (defaults to 'main')\n\t-c/-C -- whether to compile (uses make)\n\t-d/-D -- whether to process data\n\t-r/-R -- whether to run\n"
+  echo -e "Available params:\n\t-h -- show this help\n\t-b BINARY -- specify program to run (defaults to 'main')\n\t-c/-C -- whether to compile (uses make)\n\t-d/-D -- whether to process data\n\t-r/-R -- whether to run\n\t-a/-A -- run all stages / none; specify it always first"
 }
 
 # possible params
@@ -36,6 +36,11 @@ do
       should_compile=1
       should_run=1
       should_process_data=1
+      ;;
+    A)
+      should_compile=0
+      should_run=0
+      should_process_data=0
       ;;
     b) progname="${OPTARG}"
       ;;
