@@ -23,7 +23,7 @@ execution_context="vCluster"
 
 # https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash
 OPTIND=1
-opt_str="hab:dDm:cCrR"
+opt_str="haAb:dDm:cCrR"
 
 while getopts "${opt_str}" opt
 do
