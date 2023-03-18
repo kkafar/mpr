@@ -20,11 +20,12 @@ progname="main"
 machinefilename="nodes"
 
 # Final run
-point_counts=(10 100 1000 10000 100000 100000 10000000 100000000 1000000000 10000000000)
-proc_counts=(1 2 4 6 8 10 12)
+# 10^2, 10^3, ^4, ^5, ^6, ^7, ^8, ^9, ^10
+point_counts_final=(100 1000 10000 100000 100000 10000000 100000000 1000000000 10000000000)
+proc_counts_final=(1 2 3 4 5 6 7 8 9 10 11 12)
 
 # Test run
-point_counts_test=(10 100 1000)
+point_counts_test=(100 1000)
 proc_counts_test=(1 2 4 6 8 10 12)
 
 should_process_data=1 # 1 means 'yes'
@@ -79,8 +80,6 @@ do
       ;;
     t) 
       is_test=1
-      point_counts=${point_counts_test}
-      proc_counts=${proc_counts_test}
       ;;
   esac
 done
@@ -95,7 +94,21 @@ then
   execution_context="vCluster"
 fi
 
+
+if [[ ${is_test} -eq 1 ]]
+then
+  echo "Running test configuration"
+  point_counts=${point_counts_test[@]}
+  proc_counts=${proc_counts_test[@]}
+else
+  echo "Running final configuration"
+  point_counts=${point_counts_final[@]}
+  proc_counts=${proc_counts_final[@]}
+fi
+
 echo "Running with execution context: ${execution_context}"
+echo "Point counts: ${point_counts[@]}"
+echo "Proc counts: ${proc_counts[@]}"
 
 if [[ ${is_ares} -eq 1 ]]
 then
