@@ -11,7 +11,7 @@ is_ares=1
 execution_context="vCluster"
 
 # Chceck whether necessary binaries are installed
-if [[ ! command -v mpiexec &> /dev/null ]]; then
+if ! command -v mpiexec &> /dev/null then
   echo "Looks like mpiexec binary is missing... Aborting"
   exit 1
 fi
