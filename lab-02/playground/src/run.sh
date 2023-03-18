@@ -140,13 +140,12 @@ then
     exit 1
   fi
 
-  raw_data="$(ls ${ouput_raw})"
-  echo "Detected files: ${raw_data}"
+  # finaldatafile="${output_processed}/final.csv"
 
-  finaldatafile="${output_processed}/final.csv"
-  echo "proc_count,total_point_count,point_count,avg_pi,time" > "${finaldatafile}"
-
-  ls "${output_raw}" | xargs -n 1 tail -n 1 >> "${finaldatafile}"
+  cd "${output_raw}"
+  echo "proc_count,total_point_count,point_count,avg_pi,time" > "../processed/final.csv"
+  ls . | xargs -n 1 tail -n 1 >> "../processed/final.csv"
+  cd ../..
 fi
 
 exit 0
