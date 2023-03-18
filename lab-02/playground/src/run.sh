@@ -65,86 +65,88 @@ shift $((OPTIND-1))
 
 if [[ ${should_compile} -eq 1 ]]
 then
-  if ! command -v make &> /dev/null
-  then
-    echo "Looks like make binary is missing... Aborting"
-    exit 1
-  fi
-  make
+  echo "Compiling..."
+  # if ! command -v make &> /dev/null
+  # then
+  #   echo "Looks like make binary is missing... Aborting"
+  #   exit 1
+  # fi
+  # make
 fi
 
 if [[ ${should_run} -eq 1 ]]
 then
-  if ! command -v mpiexec &> /dev/null
-  then
-    echo "Looks like mpiexec binary is missing... Aborting"
-    exit 1
-  fi
-
-  if ! command -v tee &> /dev/null
-  then
-    echo "Looks like tee binary is missing... Aborting"
-    exit 1
-  fi
-
-  # Detect on what machine we're running.
-  # Currently it is up to user to specify env var IS_ARES=1
-  # in case the script is run on Ares
-  if [[ ! -z "${IS_ARES}" ]]
-  then
-    echo "Execution context: Ares"
-    is_ares=0
-    execution_context="Ares"
-  else
-    echo "Execution context: vCluster"
-    execution_context="vCluster"
-  fi
-
-  if [[ ! -z "${MACHINEFILE}" ]]
-  then
-    machinefilename="${MACHINEFILE}"
-  fi
-
-  echo "Running with machinefile: ${machinefilename}"
-
-  # Ensure that output output directory exists
-  mkdir -p data/{raw,processed}
-
-  output_raw="data/raw"
-  output_processed="data/processed"
-
-  for cur_proc_count in "${proc_counts[@]}"
-  do
-    for cur_point_count in "${point_counts[@]}"
-    do
-      if [[ ${is_ares} -eq 0 ]]; then
-        echo "[${execution_context}] Execution commands for Ares are unimplemented; Aborting"
-        exit 1
-        # mpiexec -np ${cur_proc_count} "./${progname}" "${cur_point_count}" > "${output_raw}/proc_${cur_proc_count}_point_${cur_point_count}.csv"
-      else
-        echo "[${execution_context}] Point count: ${cur_point_count}, process count: ${cur_proc_count}"
-        mpiexec -machinefile "./${machinefilename}" -np ${cur_proc_count} "./${progname}" "${cur_point_count}" | tee "${output_raw}/proc_${cur_proc_count}_point_${cur_point_count}.csv"
-      fi
-    done
-  done
+  echo "Running..."
+  # if ! command -v mpiexec &> /dev/null
+  # then
+  #   echo "Looks like mpiexec binary is missing... Aborting"
+  #   exit 1
+  # fi
+  #
+  # if ! command -v tee &> /dev/null
+  # then
+  #   echo "Looks like tee binary is missing... Aborting"
+  #   exit 1
+  # fi
+  #
+  # # Detect on what machine we're running.
+  # # Currently it is up to user to specify env var IS_ARES=1
+  # # in case the script is run on Ares
+  # if [[ ! -z "${IS_ARES}" ]]
+  # then
+  #   echo "Execution context: Ares"
+  #   is_ares=0
+  #   execution_context="Ares"
+  # else
+  #   echo "Execution context: vCluster"
+  #   execution_context="vCluster"
+  # fi
+  #
+  # if [[ ! -z "${MACHINEFILE}" ]]
+  # then
+  #   machinefilename="${MACHINEFILE}"
+  # fi
+  #
+  # echo "Running with machinefile: ${machinefilename}"
+  #
+  # # Ensure that output output directory exists
+  # mkdir -p data/{raw,processed}
+  #
+  # output_raw="data/raw"
+  # output_processed="data/processed"
+  #
+  # for cur_proc_count in "${proc_counts[@]}"
+  # do
+  #   for cur_point_count in "${point_counts[@]}"
+  #   do
+  #     if [[ ${is_ares} -eq 0 ]]; then
+  #       echo "[${execution_context}] Execution commands for Ares are unimplemented; Aborting"
+  #       exit 1
+  #       # mpiexec -np ${cur_proc_count} "./${progname}" "${cur_point_count}" > "${output_raw}/proc_${cur_proc_count}_point_${cur_point_count}.csv"
+  #     else
+  #       echo "[${execution_context}] Point count: ${cur_point_count}, process count: ${cur_proc_count}"
+  #       mpiexec -machinefile "./${machinefilename}" -np ${cur_proc_count} "./${progname}" "${cur_point_count}" | tee "${output_raw}/proc_${cur_proc_count}_point_${cur_point_count}.csv"
+  #     fi
+  #   done
+  # done
 fi
 
 if [[ ${should_process_data} -eq 1 ]]
 then
   echo "Processing raw data..."
-  if ! command -v xargs &> /dev/null
-  then
-    echo "Looks like xargs binary is missing... Aborting"
-    exit 1
-  fi
-
-  raw_data="$(ls ${ouput_raw}/"
-  echo "Detected files: ${raw_data}"
-
-  finaldatafile="${output_processed}/final.csv"
-  echo "proc_count,total_point_count,point_count,avg_pi,time" > "${finaldatafile}"
-
-  ls "${output_raw}" | xargs -n 1 tail -n 1 >> "${finaldatafile}"
+  # if ! command -v xargs &> /dev/null
+  # then
+  #   echo "Looks like xargs binary is missing... Aborting"
+  #   exit 1
+  # fi
+  #
+  # raw_data="$(ls ${ouput_raw}/"
+  # echo "Detected files: ${raw_data}"
+  #
+  # finaldatafile="${output_processed}/final.csv"
+  # echo "proc_count,total_point_count,point_count,avg_pi,time" > "${finaldatafile}"
+  #
+  # ls "${output_raw}" | xargs -n 1 tail -n 1 >> "${finaldatafile}"
 fi
 
 exit 0
