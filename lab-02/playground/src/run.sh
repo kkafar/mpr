@@ -74,6 +74,12 @@ then
   make
 fi
 
+# Ensure that output output directory exists
+mkdir -p data/{raw,processed}
+
+output_raw="data/raw"
+output_processed="data/processed"
+
 if [[ ${should_run} -eq 1 ]]
 then
   echo "Running..."
@@ -109,12 +115,6 @@ then
 
   echo "Running with machinefile: ${machinefilename}"
 
-  # Ensure that output output directory exists
-  mkdir -p data/{raw,processed}
-
-  output_raw="data/raw"
-  output_processed="data/processed"
-
   for cur_proc_count in "${proc_counts[@]}"
   do
     for cur_point_count in "${point_counts[@]}"
@@ -140,7 +140,7 @@ then
     exit 1
   fi
 
-  raw_data="$(ls ${ouput_raw}/)"
+  raw_data="$(ls ${ouput_raw})"
   echo "Detected files: ${raw_data}"
 
   finaldatafile="${output_processed}/final.csv"
