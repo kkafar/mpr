@@ -1,6 +1,14 @@
-#! /usr/bin/bash
+#!/bin/bash -l
+#SBATCH --nodes 1
+#SBATCH --ntasks 12
+#SBATCH --time=01:00:00
+#SBATCH --partition=plgrid
+#SBATCH --account=plgmpr23-cpu
 
-echo "Running run.sh script"
+## vCluster
+##! /usr/bin/bash
+
+echo "Running run.sh script from dir: $(pwd)"
 
 print_help ()
 {
@@ -10,7 +18,13 @@ print_help ()
 # possible params
 progname="main"
 machinefilename="nodes"
-point_counts=(10 100 1000 10000 100000 100000 10000000 100000000 1000000000 10000000000)
+
+# Final run
+# point_counts=(10 100 1000 10000 100000 100000 10000000 100000000 1000000000 10000000000)
+# proc_counts=(1 2 4 6 8 10 12)
+
+# Test run
+point_counts=(10 100 1000)
 proc_counts=(1 2 4 6 8 10 12)
 
 should_process_data=1 # 1 means 'yes'
@@ -18,7 +32,7 @@ should_compile=1
 should_run=1
 
 # execution context
-is_ares=1
+is_ares=0
 execution_context="vCluster"
 
 # https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash
@@ -63,6 +77,25 @@ done
 
 shift $((OPTIND-1))
 
+# Detect on what machine we're running.
+# Currently it is up to user to specify env var IS_ARES=1
+# in case the script is run on Ares
+if [[ ! -z "${IS_ARES}" ]]
+then
+  echo "Execution context: Ares"
+  is_ares=1
+  execution_context="Ares"
+else
+  echo "Execution context: vCluster"
+  execution_context="vCluster"
+fi
+
+if [[ ${is_ares} -eq 1 ]]
+then
+  echo "Adding plgrid/tools/openmpi module"
+  module add .plgrid plgrid/tools/openmpi
+fi
+
 if [[ ${should_compile} -eq 1 ]]
 then
   echo "Compiling..."
@@ -95,19 +128,6 @@ then
     exit 1
   fi
 
-  # Detect on what machine we're running.
-  # Currently it is up to user to specify env var IS_ARES=1
-  # in case the script is run on Ares
-  if [[ ! -z "${IS_ARES}" ]]
-  then
-    echo "Execution context: Ares"
-    is_ares=0
-    execution_context="Ares"
-  else
-    echo "Execution context: vCluster"
-    execution_context="vCluster"
-  fi
-
   if [[ ! -z "${MACHINEFILE}" ]]
   then
     machinefilename="${MACHINEFILE}"
@@ -119,10 +139,11 @@ then
   do
     for cur_point_count in "${point_counts[@]}"
     do
-      if [[ ${is_ares} -eq 0 ]]; then
-        echo "[${execution_context}] Execution commands for Ares are unimplemented; Aborting"
-        exit 1
-        # mpiexec -np ${cur_proc_count} "./${progname}" "${cur_point_count}" > "${output_raw}/proc_${cur_proc_count}_point_${cur_point_count}.csv"
+      if [[ ${is_ares} -eq 1 ]]; then
+        # echo "[${execution_context}] Execution commands for Ares are unimplemented; Aborting"
+        # exit 1
+        echo "[${execution_context}] Point count: ${cur_point_count}, process count: ${cur_proc_count}"
+        mpiexec -np ${cur_proc_count} "./${progname}" "${cur_point_count}" | tee "${output_raw}/proc_${cur_proc_count}_point_${cur_point_count}.csv"
       else
         echo "[${execution_context}] Point count: ${cur_point_count}, process count: ${cur_proc_count}"
         mpiexec -machinefile "./${machinefilename}" -np ${cur_proc_count} "./${progname}" "${cur_point_count}" | tee "${output_raw}/proc_${cur_proc_count}_point_${cur_point_count}.csv"
