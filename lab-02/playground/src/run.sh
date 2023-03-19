@@ -13,7 +13,7 @@ echo "Running run.sh script from dir: ${rootdir}"
 
 print_help ()
 {
-  echo -e "Available params:\n\t-h -- show this help\n\t-b BINARY -- specify program to run (defaults to 'main')\n\t-c/-C -- whether to compile (uses make)\n\t-d/-D -- whether to process data\n\t-r/-R -- whether to run\n\t-a/-A -- run all stages / none; specify it always first\n\t-m MACHINEFILE\n\t-x/-X -- ares / not ares execution context\n\t-t -- run with test params\n\t-s/-S -- scale weak / strong"
+  echo -e "Available params:\n\t-h -- show this help\n\t-b BINARY -- specify program to run (defaults to 'main')\n\t-c/-C -- whether to compile (uses make)\n\t-d/-D -- whether to process data\n\t-r/-R -- whether to run\n\t-a/-A -- run all stages / none; specify it always first\n\t-m MACHINEFILE\n\t-x/-X -- ares / not ares execution context\n\t-t -- run with test params\n\t-s/-S -- scale weak / strong\n\t-z -- archive final data"
 }
 
 # $1 -- binary name
@@ -92,6 +92,7 @@ ares_point_counts=( 1000 10000000 100000000000 ) # 1e3, 1e7, 1e11
 should_process_data=1 # 1 means 'yes'
 should_compile=1
 should_run=1
+should_archive=0
 is_test=0
 
 
@@ -101,7 +102,7 @@ execution_context="Ares"
 
 # https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash
 OPTIND=1
-opt_str="haAb:dDm:cCrRxXtsS"
+opt_str="haAb:dDm:cCrRxXtsSz"
 
 while getopts "${opt_str}" opt
 do
@@ -142,6 +143,9 @@ do
       ;;
     t) 
       is_test=1
+      ;;
+    z)
+      should_archive=1
       ;;
   esac
 done
@@ -250,6 +254,17 @@ then
   # ls . | grep "^type_weak"
   # ls . | xargs -n 1 tail -n 1 >> "../processed/final.csv"
   # cd ../..
+fi
+
+
+if [[ ${should_archive} -eq 1 ]]
+then
+  cd "${rootdir}"
+  echo "Archiving final data..."
+  timestamp=$(date +%Y-%m-%d-%H:%M:%S)
+  archivedir="data-archive/${execution_context}/${timestamp}"
+  mkdir -p "${archivedir}"
+  cp "${outdir_processed}/*.csv ${archivedir}/"
 fi
 
 exit 0
