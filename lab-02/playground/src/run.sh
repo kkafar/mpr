@@ -241,8 +241,8 @@ then
   # Main loop dispatch
   if [[ ${is_ares} -eq 1 ]]
   then
-    echo "Running loop for Ares has not been implemented yet"
-    exit 1
+    run_ares_strong
+    run_ares_weak
   else
     run_vc_strong
     run_vc_weak
