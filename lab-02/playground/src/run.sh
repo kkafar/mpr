@@ -247,7 +247,7 @@ then
       # outfile="final_type_${exptype}_series_${series_id}.csv"
       outfile="final.csv"
       echo "type,series,proc_count,total_point_count,point_count,avg_pi,time" > "../processed/${outfile}"
-      ls . | grep "^type_${exptype}_series_${series_id}" | xargs -n 1 tail -n 1 | awk -F ',' '/.+/ {print "${exptype},${series_id},$0"}' >> "../processed/${outfile}"
+      ls . | grep "^type_${exptype}_series_${series_id}" | xargs -n 1 tail -n 1 | awk -F ',' '/.+/ {print "${exptype}," "${series_id}," $0}' >> "../processed/${outfile}"
     done
   done
 
