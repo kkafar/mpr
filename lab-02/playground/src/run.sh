@@ -241,7 +241,7 @@ then
   for exptype in "strong" "weak"
   do
     echo "Processing for experiment type: ${exptype}"
-    for (( series_id = 1 ; series_id < ${vc_repeats} ; series_id++ ))
+    for (( series_id = 1 ; series_id <= ${vc_repeats} ; series_id++ ))
     do
       outfile="final_type_${exptype}_series_${series_id}.csv"
       echo "proc_count,total_point_count,point_count,avg_pi,time" > "../processed/${outfile}"
