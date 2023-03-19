@@ -196,11 +196,11 @@ done
 
 shift $((OPTIND-1))
 
-if [[ ${is_ares} -eq 1 ]]
-then
-  echo "Adding plgrid/tools/openmpi module"
-  module add .plgrid plgrid/tools/openmpi
-fi
+# if [[ ${is_ares} -eq 1 ]]
+# then
+#   echo "Adding plgrid/tools/openmpi module"
+#   module add .plgrid plgrid/tools/openmpi
+# fi
 
 if [[ ${should_compile} -eq 1 ]]
 then

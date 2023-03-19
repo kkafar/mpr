@@ -1,5 +1,8 @@
 #!/bin/bash -l
 
+echo "Adding plgrid/tools/openmpi module"
+module add .plgrid plgrid/tools/openmpi
+
 # Do not process data, do not archive, do not compile
 make all
 sbatch ./run.sh -C -D -Z -S "1 2 3 4 5"
