@@ -60,13 +60,13 @@ run_vc_weak ()
   done
 }
 
-run_ares_strong ()
-{
-}
-
-run_ares_weak ()
-{
-}
+# run_ares_strong ()
+# {
+# }
+#
+# run_ares_weak ()
+# {
+# }
 
 # possible params
 progname="main"
