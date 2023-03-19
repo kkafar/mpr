@@ -265,7 +265,7 @@ then
   timestamp=$(date +%Y-%m-%d-%H:%M:%S)
   archivedir="data-archive/${execution_context}/${timestamp}"
   mkdir -p "${archivedir}"
-  cp "${outdir_processed}/*.csv ${archivedir}/"
+  cp "${outdir_processed}/*.csv" "${archivedir}/"
 fi
 
 exit 0
