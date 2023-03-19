@@ -16,8 +16,6 @@ E_n = S_n / n
 
 SF_n = (1 / S_n - 1 / n) / (1 - 1/n)
 
-
-
 Czas (T_n) powinien spadać jak 1/x
 
 Przyśpieszenie powinno rosnąć (wolniej niż liniowo, liniowo to ideał)
