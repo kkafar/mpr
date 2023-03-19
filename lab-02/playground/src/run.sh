@@ -97,8 +97,17 @@ is_test=0
 
 
 # Execution context
-is_ares=1
-execution_context="Ares"
+username="$(whoami)"
+
+if [[ "${username}" != "kafara" ]]
+then
+  is_ares=1
+  execution_context="ares"
+else
+  is_ares=0
+  execution_context="vcluster"
+fi
+
 
 # https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash
 OPTIND=1
@@ -151,14 +160,6 @@ do
 done
 
 shift $((OPTIND-1))
-
-# Detect on what machine we're running.
-# Currently it is up to user to specify env var IS_ARES=1
-# in case the script is run on Ares
-if [[ ${is_ares} -eq 0 ]]
-then
-  execution_context="vcluster"
-fi
 
 if [[ ${is_ares} -eq 1 ]]
 then
