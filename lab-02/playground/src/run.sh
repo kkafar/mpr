@@ -238,26 +238,17 @@ then
 
   cd "${outdir_raw}"
 
-  outfile=""
+  outfile="final.csv"
   for exptype in "strong" "weak"
   do
     echo "Processing for experiment type: ${exptype}"
     for (( series_id = 1 ; series_id <= ${vc_repeats} ; series_id++ ))
     do
-      # outfile="final_type_${exptype}_series_${series_id}.csv"
-      outfile="final.csv"
+      echo "\tsid: ${series_id}, files: $(ls . | grep "^type_${exptype}_series_${series_id}")"
       echo "type,series,proc_count,total_point_count,point_count,avg_pi,time" > "../processed/${outfile}"
       ls . | grep "^type_${exptype}_series_${series_id}" | xargs -n 1 tail -n 1 | awk -v type="${exptype}" -v sid="${series_id}" -F ',' '/.+/ {print type "," sid "," $0}' >> "../processed/${outfile}"
     done
   done
-
-  # cd "${outdir_processed}"
-  #
-  # outfile="final.csv"
-  # for exptype in "strong" "weak"
-  # do
-  #
-  # done
 
   cd "${rootdir}"
 
