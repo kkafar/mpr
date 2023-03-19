@@ -234,6 +234,7 @@ if [[ ${should_process_data} -eq 1 ]]
 then
   echo "Processing raw data..."
   assert_binary_exists "xargs"
+  assert_binary_exists "awk"
 
   cd "${outdir_raw}"
 
@@ -243,11 +244,20 @@ then
     echo "Processing for experiment type: ${exptype}"
     for (( series_id = 1 ; series_id <= ${vc_repeats} ; series_id++ ))
     do
-      outfile="final_type_${exptype}_series_${series_id}.csv"
-      echo "proc_count,total_point_count,point_count,avg_pi,time" > "../processed/${outfile}"
-      ls . | grep "^type_${exptype}_series_${series_id}" | xargs -n 1 tail -n 1 >> "../processed/${outfile}"
+      # outfile="final_type_${exptype}_series_${series_id}.csv"
+      outfile="final.csv"
+      echo "type,series,proc_count,total_point_count,point_count,avg_pi,time" > "../processed/${outfile}"
+      ls . | grep "^type_${exptype}_series_${series_id}" | xargs -n 1 tail -n 1 | awk -F ',' '/.+/ {print "${exptype},${series_id},$0"}' >> "../processed/${outfile}"
     done
   done
+
+  # cd "${outdir_processed}"
+  #
+  # outfile="final.csv"
+  # for exptype in "strong" "weak"
+  # do
+  #
+  # done
 
   cd "${rootdir}"
 
