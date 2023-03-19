@@ -8,7 +8,8 @@
 ## vcluster
 ##! /usr/bin/bash
 
-echo "Running run.sh script from dir: $(pwd)"
+rootdir="$(pwd)"
+echo "Running run.sh script from dir: ${rootdir}"
 
 print_help ()
 {
@@ -30,7 +31,6 @@ run_vc_strong ()
   # Constant problem size -- splitted over various numbers of processes
   local problem_size=${vc_strong_point_count}
   local exp_type="strong"
-  echo "[${execution_context}] Running vcluster strong with ${problem_size} points and ${proc_count} processes"
   
   for (( series_id = 1 ; series_id <= ${vc_repeats} ; series_id++ ))
   do
@@ -46,7 +46,6 @@ run_vc_weak ()
 {
   local base_problem_size=${vc_weak_point_count_base}
   local exp_type="weak"
-  echo "[${execution_context}] Running vcluster weak with ${base_problem_size} base points and ${proc_count} processes"
   local problem_size=${base_problem_size}
 
   for (( series_id = 1 ; series_id <= ${vc_repeats} ; series_id++ ))
@@ -157,24 +156,6 @@ then
   execution_context="vcluster"
 fi
 
-# if [[ ${is_test} -eq 1 ]]
-# then
-#   echo "Running test configuration"
-#   point_counts=${point_counts_test[@]}
-#   proc_counts=${proc_counts_test[@]}
-#   series_list=${series_list_test[@]}
-# else
-#   echo "Running final configuration"
-#   point_counts=${point_counts_full[@]}
-#   proc_counts=${proc_counts_full[@]}
-#   series_list=${series_list_full[@]}
-# fi
-
-# echo "Running with execution context: ${execution_context}"
-# echo "Point counts: ${point_counts[@]}"
-# echo "Proc counts: ${proc_counts[@]}"
-# echo "Series list: ${series_list[@]}"
-
 if [[ ${is_ares} -eq 1 ]]
 then
   echo "Adding plgrid/tools/openmpi module"
@@ -244,18 +225,31 @@ then
   # done
 fi
 #
-# if [[ ${should_process_data} -eq 1 ]]
-# then
-#   echo "Processing raw data..."
-#   assert_binary_exists "xargs"
-#
-#   # finaldatafile="${output_processed}/final.csv"
-#
-#   cd "${output_raw}"
-#   echo "proc_count,total_point_count,point_count,avg_pi,time" > "../processed/final.csv"
-#   ls . | xargs -n 1 tail -n 1 >> "../processed/final.csv"
-#   cd ../..
-# fi
+if [[ ${should_process_data} -eq 1 ]]
+then
+  echo "Processing raw data..."
+  assert_binary_exists "xargs"
+
+  cd "${outdir_raw}"
+
+  outfile=""
+  for exptype in "strong" "weak"
+  do
+    for (( series_id = 1 ; series_id < ${vc_repeats} ; series_id++ ))
+    do
+      outfile="final_type_${exptype}_series_${series_id}.csv"
+      echo "proc_count,total_point_count,point_count,avg_pi,time" > "../processed/${outfile}"
+      ls . | grep "^type_${exptype}_series_${series_id}" | xargs -n 1 tail -n 1 >> "../processed/${outfile}"
+    done
+  done
+
+  cd "${rootdir}"
+
+  # echo "proc_count,total_point_count,point_count,avg_pi,time" > "../processed/final.csv"
+  # ls . | grep "^type_weak"
+  # ls . | xargs -n 1 tail -n 1 >> "../processed/final.csv"
+  # cd ../..
+fi
 
 exit 0
 
