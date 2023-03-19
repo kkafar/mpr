@@ -3,7 +3,7 @@
 all: build
 
 build: main.c
-	mpicc -DOPAL_STDC_HEADERS=0 -fast -o main -std=c99 main.c 
+	mpicc -fast -o main -std=c99 main.c 
 
 run: build
 	mpiexec -machinefile ./allnodes -np 2 ./main 1000000
