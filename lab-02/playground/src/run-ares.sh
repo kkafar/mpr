@@ -1,8 +1,9 @@
 #!/bin/bash -l
-#SBATCH --nodes 1
-#SBATCH --ntasks 12
-#SBATCH --time=01:00:00
-#SBATCH --partition=plgrid
-#SBATCH --account=plgmpr23-cpu
 
-# W tym skrypcie obsł
+# Do not process data, do not archive, do not compile
+make all
+sbatch ./run.sh -C -D -Z -S "1 2 3 4 5"
+sbatch ./run.sh -C -D -Z -S "6 7 8 9 10"
+sbatch ./run.sh -C -D -Z -s "1 2 3 4 5"
+sbatch ./run.sh -C -D -Z -s "6 7 8 9 10"
+

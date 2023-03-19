@@ -1,19 +1,16 @@
 #!/bin/bash -l
 #SBATCH --nodes 1
 #SBATCH --ntasks 12
-#SBATCH --time=01:00:00
+#SBATCH --time=03:00:00
 #SBATCH --partition=plgrid
 #SBATCH --account=plgmpr23-cpu
-
-## vcluster
-##! /usr/bin/bash
 
 rootdir="$(pwd)"
 echo "Running run.sh script from dir: ${rootdir}"
 
 print_help ()
 {
-  echo -e "Available params:\n\t-h -- show this help\n\t-b BINARY -- specify program to run (defaults to 'main')\n\t-c/-C -- whether to compile (uses make)\n\t-d/-D -- whether to process data\n\t-r/-R -- whether to run\n\t-a/-A -- run all stages / none; specify it always first\n\t-m MACHINEFILE\n\t-x/-X -- ares / not ares execution context\n\t-t -- run with test params\n\t-s/-S -- scale weak / strong\n\t-z -- archive final data"
+  echo -e "Available params:\n\t-h -- show this help\n\t-b BINARY -- specify program to run (defaults to 'main')\n\t-c/-C -- whether to compile (uses make)\n\t-d/-D -- whether to process data\n\t-r/-R -- whether to run\n\t-a/-A -- run all stages / none; specify it always first\n\t-m MACHINEFILE\n\t-x/-X -- ares / not ares execution context\n\t-t -- run with test params\n\t-s/-S -- scale weak / strong (only for Ares)\n\t-z -- archive final data"
 }
 
 # $1 -- binary name
@@ -59,17 +56,42 @@ run_vc_weak ()
   done
 }
 
-# run_ares_strong ()
-# {
-# }
-#
-# run_ares_weak ()
-# {
-# }
+run_ares_strong ()
+{
+  for series_id in ${ares_series}
+  do
+    for problem_size in "${ares_point_counts[@]}"
+    do
+      for n_procs in ${proc_count}
+      do
+        echo "[ares] scaling: strong, sid: ${series_id}, points: ${problem_size}, procs: ${n_procs}"
+        mpiexec -np ${n_procs} "./main" "${problem_size}" | tee "${outdir_raw}/type_strong_series_${series_id}_points_${problem_size}_procs_${n_procs}.csv"
+      done
+    done
+  done
+}
+
+run_ares_weak ()
+{
+  local total_problem_size=0
+  for series_id in ${ares_series} 
+  do
+    for problem_size in "${ares_point_counts[@]}"
+    do
+      for n_procs in ${proc_count}
+      do
+        total_problem_size=$(( ${problem_size} * ${n_procs} ))
+        echo "[ares] scaling: weak, sid: ${series_id}, points: ${total_problem_size}, procs: ${n_procs}"
+        mpiexec -np ${n_procs} "./main" "${total_problem_size}" | tee "${outdir_raw}/type_weak_series_${series_id}_points_${total_problem_size}_procs_${n_procs}.csv"
+      done
+    done
+  done
+}
 
 # possible params
 progname="main"
 machinefilename="allnodes"
+scaling="all"
 
 # Shared configuration
 proc_count=$(seq 1 1 12)
@@ -78,21 +100,21 @@ proc_count=$(seq 1 1 12)
 vc_repeats=1
 
 # weak scaling configuration
-vc_weak_point_count_base=100000000 # 1e8
+vc_weak_point_count_base=1000000000 # 1e9
 
 # strong scaling configuration
-vc_strong_point_count=100000000 # 1e8
+vc_strong_point_count=1000000000 # 1e9
 
 # Ares configurations
 ares_repeats=1
+ares_series=""
 ares_point_counts=( 1000 10000000 100000000000 ) # 1e3, 1e7, 1e11
-
 
 # Actions to execute
 should_process_data=1 # 1 means 'yes'
 should_compile=1
 should_run=1
-should_archive=0
+should_archive=1
 is_test=0
 
 
@@ -111,7 +133,7 @@ fi
 
 # https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash
 OPTIND=1
-opt_str="haAb:dDm:cCrRxXtsSz"
+opt_str="haAb:dDm:cCrRxXts:S:zZ"
 
 while getopts "${opt_str}" opt
 do
@@ -124,11 +146,13 @@ do
       should_compile=1
       should_run=1
       should_process_data=1
+      should_archive=1
       ;;
     A)
       should_compile=0
       should_run=0
       should_process_data=0
+      should_archive=0
       ;;
     b) progname="${OPTARG}"
       ;;
@@ -155,6 +179,17 @@ do
       ;;
     z)
       should_archive=1
+      ;;
+    Z)
+      should_archive=0
+      ;;
+    s)
+      scaling="weak"
+      ares_series="${OPTARG}"
+      ;;
+    S)
+      scaling="strong"
+      ares_series="${OPTARG}"
       ;;
   esac
 done
@@ -229,7 +264,7 @@ then
   #   done
   # done
 fi
-#
+
 if [[ ${should_process_data} -eq 1 ]]
 then
   echo "Processing raw data..."
@@ -251,11 +286,6 @@ then
   done
 
   cd "${rootdir}"
-
-  # echo "proc_count,total_point_count,point_count,avg_pi,time" > "../processed/final.csv"
-  # ls . | grep "^type_weak"
-  # ls . | xargs -n 1 tail -n 1 >> "../processed/final.csv"
-  # cd ../..
 fi
 
 
