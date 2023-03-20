@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH --nodes 1
 #SBATCH --ntasks 12
-#SBATCH --time=24:00:00
+#SBATCH --time=10:00:00
 #SBATCH --partition=plgrid
 #SBATCH --account=plgmpr23-cpu
 
@@ -101,15 +101,15 @@ vc_repeats=3
 vc_series=""
 
 # weak scaling configuration
-vc_weak_point_count_base=2000000000 # 1e9
+vc_weak_point_count_base=100000000 # 1e8
 
 # strong scaling configuration
-vc_strong_point_count=2000000000 # 1e9
+vc_strong_point_count=100000000 # 1e8
 
 # Ares configurations
-ares_repeats=1
+ares_repeats=10
 ares_series=""
-ares_point_counts=( 1000 10000000 100000000000 ) # 1e3, 1e7, 1e11
+ares_point_counts=( 1000 1000000 1000000000 ) # 1e3, 1e6, 1e9
 
 # Actions to execute
 should_process_data=1 # 1 means 'yes'
@@ -266,11 +266,17 @@ then
 
   outfile="final.csv"
   echo "type,series,proc_count,total_point_count,point_count,avg_pi,time" > "../processed/${outfile}"
+  series_count=${ares_repeats}
+
+  if [[ ${is_ares} -eq 0 ]]
+  then
+    series_count=${vc_repeats}
+  fi
 
   for exptype in "strong" "weak"
   do
     echo "Processing for experiment type: ${exptype}"
-    for (( series_id = 1 ; series_id <= ${vc_repeats} ; series_id++ ))
+    for (( series_id = 1 ; series_id <= ${series_count} ; series_id++ ))
     do
       ls . | grep "^type_${exptype}_series_${series_id}" | xargs -n 1 tail -n 1 | awk -v type="${exptype}" -v sid="${series_id}" -F ',' '/.+/ {print type "," sid "," $0}' >> "../processed/${outfile}"
     done
