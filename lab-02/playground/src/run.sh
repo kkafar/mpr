@@ -97,13 +97,13 @@ scaling="all"
 proc_count=$(seq 1 1 12)
 
 # vcluster configurations
-vc_repeats=1
+vc_repeats=3
 
 # weak scaling configuration
-vc_weak_point_count_base=1000000000 # 1e9
+vc_weak_point_count_base=2000000000 # 1e9
 
 # strong scaling configuration
-vc_strong_point_count=1000000000 # 1e9
+vc_strong_point_count=2000000000 # 1e9
 
 # Ares configurations
 ares_repeats=1
