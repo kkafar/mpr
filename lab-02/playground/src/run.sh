@@ -241,8 +241,12 @@ then
   # Main loop dispatch
   if [[ ${is_ares} -eq 1 ]]
   then
-    run_ares_strong
-    run_ares_weak
+    if [[ ${scaling} == "weak" ]]
+    then
+      run_ares_weak
+    else
+      run_ares_strong
+    fi
   else
     run_vc_strong
     run_vc_weak
