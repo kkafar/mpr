@@ -28,7 +28,7 @@ run_vc_strong ()
   # Constant problem size -- splitted over various numbers of processes
   local problem_size=${vc_strong_point_count}
   local exp_type="strong"
-  
+
   for (( series_id = 1 ; series_id <= ${vc_repeats} ; series_id++ ))
   do
     for n_processes in ${proc_count}
@@ -74,7 +74,7 @@ run_ares_strong ()
 run_ares_weak ()
 {
   local total_problem_size=0
-  for series_id in ${ares_series} 
+  for series_id in ${ares_series}
   do
     for problem_size in "${ares_point_counts[@]}"
     do
@@ -98,6 +98,7 @@ proc_count=$(seq 1 1 12)
 
 # vcluster configurations
 vc_repeats=3
+vc_series=""
 
 # weak scaling configuration
 vc_weak_point_count_base=2000000000 # 1e9
@@ -138,7 +139,7 @@ opt_str="haAb:dDm:cCrRxXts:S:zZ"
 while getopts "${opt_str}" opt
 do
   case "${opt}" in
-    h) 
+    h)
       print_help
       exit 0
       ;;
@@ -174,7 +175,7 @@ do
       ;;
     X) is_ares=0
       ;;
-    t) 
+    t)
       is_test=1
       ;;
     z)
@@ -186,10 +187,12 @@ do
     s)
       scaling="weak"
       ares_series="${OPTARG}"
+	  vc_series="${OPTARG}"
       ;;
     S)
       scaling="strong"
       ares_series="${OPTARG}"
+	  vc_series="${OPTARG}"
       ;;
   esac
 done
@@ -251,22 +254,6 @@ then
     run_vc_strong
     run_vc_weak
   fi
-
-  # for cur_proc_count in "${proc_counts[@]}"
-  # do
-  #   for cur_point_count in "${point_counts[@]}"
-  #   do
-  #     if [[ ${is_ares} -eq 1 ]]; then
-  #       # echo "[${execution_context}] Execution commands for Ares are unimplemented; Aborting"
-  #       # exit 1
-  #       echo "[${execution_context}] Point count: ${cur_point_count}, process count: ${cur_proc_count}"
-  #       mpiexec -np ${cur_proc_count} "./${progname}" "${cur_point_count}" | tee "${output_raw}/proc_${cur_proc_count}_point_${cur_point_count}.csv"
-  #     else
-  #       echo "[${execution_context}] Point count: ${cur_point_count}, process count: ${cur_proc_count}"
-  #       mpiexec -machinefile "./${machinefilename}" -np ${cur_proc_count} "./${progname}" "${cur_point_count}" | tee "${output_raw}/proc_${cur_proc_count}_point_${cur_point_count}.csv"
-  #     fi
-  #   done
-  # done
 fi
 
 if [[ ${should_process_data} -eq 1 ]]
