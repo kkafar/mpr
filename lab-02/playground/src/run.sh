@@ -278,7 +278,7 @@ then
     echo "Processing for experiment type: ${exptype}"
     for (( series_id = 1 ; series_id <= ${series_count} ; series_id++ ))
     do
-      ls . | grep "^type_${exptype}_series_${series_id}" | xargs -n 1 tail -n 1 | awk -v type="${exptype}" -v sid="${series_id}" -F ',' '/.+/ {print type "," sid "," $0}' >> "../processed/${outfile}"
+      ls . | grep "^type_${exptype}_series_${series_id}_" | xargs -n 1 tail -n 1 | awk -v type="${exptype}" -v sid="${series_id}" -F ',' '/.+/ {print type "," sid "," $0}' >> "../processed/${outfile}"
     done
   done
 
