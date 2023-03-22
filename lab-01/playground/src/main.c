@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <unistd.h>
 
 #ifndef ITERATION_COUNT
 #define ITERATION_COUNT 10
@@ -128,6 +129,7 @@ void experiment_throughput(ExperimentConfig cfg) {
       double throughput = msg_size * 8.0 * ITERATION_COUNT * 2.0 / (elapsed_time);
       fprintf(logfile, "%s,%d,%lf,%lf\n", cfg.name, msg_size, elapsed_time, throughput);
     }
+    usleep(5e5);
   }
 
   if (cfg.name[0] == 'b') {

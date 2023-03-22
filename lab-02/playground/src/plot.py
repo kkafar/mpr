@@ -1,45 +1,112 @@
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
+import polars as pl
+import ares
+import vcluster as vcl
+from pathlib import Path
+from typing import Literal
 
-if __name__ == "__main__":
-    t_sn = pd.read_csv('./throughput-single-node-all.csv')
-    t_tn = pd.read_csv('./throughput-two-nodes-all.csv')
+pl.Config.set_tbl_rows(100)
+plt.rcParams['errorbar.capsize'] = 5
+plt.rcParams['figure.figsize'] = (16, 9)
 
-    d_sn = pd.read_csv('./delay-single-node-all.csv')
-    d_tn = pd.read_csv('./delay-two-nodes-all.csv')
+ExperimentType = Literal['strong'] | Literal['weak']
+PlatformType = Literal['vcluster'] | Literal['ares']
 
-    print(t_sn)
-    print(t_tn)
-    print(d_sn)
-    print(d_tn)
+plotdir = Path('data', 'plots')
 
-    unit_factor = 1_000_000 / 2 ** 20
-    t_sn_std_x = t_sn[t_sn['type'] == 'std']['throughput'] * unit_factor
-    t_tn_std_x = t_tn[t_tn['type'] == 'std']['throughput'] * unit_factor
-    t_sn_buff_x = t_sn[t_sn['type'] == 'buff']['throughput'] * unit_factor
-    t_tn_buff_x = t_tn[t_tn['type'] == 'buff']['throughput'] * unit_factor
-    t_y = t_tn[t_tn['type'] == 'std']['msgsize'] / 1024
-    t_sn_y = t_sn[t_sn['type'] == 'std']['msgsize'] / 1024
+# vcluster_datafile = vcl.datadir.joinpath('vcluster-final-23-03-20-11-49.csv')
+# vcluster_datafile = vcl.datadir.joinpath('vcluster-final-23-03-20-10-02.csv')
+# # vcluster_datafile = datadir.joinpath('vcluster-final-1e8-23-03-20-15-16.csv')
+# # vcluster_datafile = datadir.joinpath('vcluster-final-23-03-20-20-18.csv')
 
-    fig, ax = plt.subplots(figsize=(12, 7))
-    ax.plot(t_sn_y, t_sn_std_x, label='std single node')
-    ax.plot(t_sn_y, t_sn_buff_x, label='buff single node')
+# # Extracting & preparing data
+# vcluster_data = pl.read_csv(vcluster_datafile)
 
-    ax.set_title('throughput(message_size)')
-    ax.set_ylabel('Throughput [Mb / s]')
-    ax.set_xlabel('Message size [KB]')
-    ax.legend()
+# df_main_agg = (
+#     vcluster_data
+#     .groupby(['type', 'proc_count'])
+#     .agg([pl.mean('time') / 1e6, pl.std('time').alias('time_std') / 1e6])
+#     .sort(pl.col(['type', 'proc_count']))
+# )
 
-    fig, ax = plt.subplots(figsize=(12, 7))
-    ax.plot(t_y, t_tn_std_x, label='std two nodes')
-    ax.plot(t_y, t_tn_buff_x, label='buff two nodes')
+# # Speedup
+# t_1_strong = df_main_agg.filter(pl.col('type') == 'strong').get_column('time')[0]
+# t_1_weak = df_main_agg.filter(pl.col('type') == 'weak').get_column('time')[0]
 
-    ax.set_title('throughput(message_size)')
-    ax.set_ylabel('Throughput [Mb / s]')
-    ax.set_xlabel('Message size [B]')
-    ax.legend()
+# df_strong_agg = (
+#     df_main_agg
+#     .filter(pl.col('type') == 'strong')
+#     .filter(pl.col('proc_count') > 1)
+#     .with_columns((t_1_strong / pl.col('time')).alias('speedup'))
+#     .with_columns((pl.col('speedup') / pl.col('proc_count')).alias('eff'))
+#     .with_columns(((1.0 / pl.col('speedup') - 1 / pl.col('proc_count')) / (1 - 1 / pl.col('proc_count'))).alias('sf'))
+# )
 
-    plt.show()
+# df_weak_agg = (
+#     df_main_agg
+#     .filter(pl.col('type') == 'weak')
+#     .with_columns((t_1_weak * pl.col('proc_count') / pl.col('time')).alias('speedup'))
+#     .filter(pl.col('proc_count') > 1)
+#     .with_columns((pl.col('speedup') / pl.col('proc_count')).alias('eff'))
+#     .with_columns(((1.0 / pl.col('speedup') - 1 / pl.col('proc_count')) / (1 - 1 / pl.col('proc_count'))).alias('sf'))
+# )
+
+# # Plotting
+
+# scaling_types = ['weak', 'strong']
+
+# # Time
+# _, plot_weak = plt.subplots()
+# _, plot_strong = plt.subplots()
+# xdata = df_main_agg.get_column('proc_count').unique().sort()
+# # print(xdata)
+
+# for plot, xtype in [(plot_weak, 'weak'), (plot_strong, 'strong')]:
+#     df_plot = df_main_agg.filter(pl.col('type') == xtype)
+#     plot.scatter(xdata, df_plot.get_column('time'), label='Średnia')
+#     plot.errorbar(xdata, df_plot.get_column('time'), yerr=df_plot.get_column('time_std'), linestyle=':')
+#     for series in range(1, 4):
+#         data = vcluster_data.filter(pl.col('series') == series).filter(pl.col('type') == xtype).sort(pl.col('proc_count'))
+#         plot.scatter(xdata, data.get_column('time') / 1e6, label=f"Seria: {series}")
+
+# plot_weak.set(title="vCluster, 1e9 punktów na proces (skalowanie słabe)", xlabel="Liczba procesów", ylabel="Czas [s]")
+# plot_strong.set(title="vCluster, 1e9 punktów do podziału (skalowanie silne)", xlabel="Liczba procesów", ylabel="Czas [s]")
+
+# plot_weak.legend()
+# plot_strong.legend()
 
 
+# # Speedup
+# _, plot_weak = plt.subplots()
+# _, plot_strong = plt.subplots()
+# xdata = df_strong_agg.get_column('proc_count').unique().sort()
+# print(xdata)
+
+# for plot, xtype in zip([plot_weak, plot_strong], scaling_types):
+#     df = df_weak_agg if xtype == 'weak' else df_strong_agg
+#     plot.scatter(xdata, df.get_column('speedup'))
+#     # plot.plot
+
+# plot_weak.legend()
+# plot_strong.legend()
+
+
+for points in ares.point_counts:
+    _, plot_w = plt.subplots()
+    xdata = ares.timedf_w.get_column('proc_count').unique()
+    data = ares.timedf_w.filter(pl.col('point_count') == points)
+    plot_w.scatter(xdata, data.get_column('time'))
+    plot_w.errorbar(xdata, data.get_column('time'), data.get_column('time_std'))
+    plot_w.set(title=f"Ares, {points:e} punktów na proces (skalowanie słabe)", xlabel="Liczba procesów", ylabel="Czas [s]")
+    plot_w.grid()
+    plot_w.legend()
+
+    _, plot_s = plt.subplots()
+    # data = ares.timedf_s.filter
+
+
+
+
+plt.tight_layout()
+plt.show()

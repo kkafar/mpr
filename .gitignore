@@ -6,6 +6,5 @@ build/
 *.csv
 .venv/
 *.png
-*.md
 *.pdf
-
+__pycache__/

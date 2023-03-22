@@ -11,6 +11,7 @@
 typedef uintmax_t Size_t;
 
 typedef struct ProcessArgs {
+  Size_t total_point_count;
   Size_t point_count;
 } ProcessArgs;
 
@@ -18,7 +19,7 @@ char g_hostname[MPI_MAX_PROCESSOR_NAME];
 int g_rank, g_size, g_hostname_len;
 ProcessArgs g_pargs;
 
-bool init_global_state(void) {
+inline bool init_global_state(void) {
   assert((MPI_Comm_rank(MPI_COMM_WORLD, &g_rank) == MPI_SUCCESS) && "Valid rank returned");
   assert((MPI_Comm_size(MPI_COMM_WORLD, &g_size) == MPI_SUCCESS) && "Valid size returned");
   assert((MPI_Get_processor_name(g_hostname, &g_hostname_len) == MPI_SUCCESS) && "Valid processor name");
@@ -34,28 +35,12 @@ double estimate_pi(Size_t point_count) {
   Size_t hit_count = 0;
 
   for (Size_t i = 0; i < point_count; ++i) {
-    // Hey! I want to avoid this division!
-    // How do I generate 
     x = drand48();
     y = drand48();
-
-    if (x * x + y * y <= 1) {
-      ++hit_count;
-    }
+    if (x * x + y * y <= 1) ++hit_count;
   }
 
   return (double)hit_count / point_count * 4; 
-}
-
-// Naive avg function
-double daverage(double *arr, Size_t size) {
-  double acc = 0.0;  
-  // This sum is potentially very unstable
-  for (Size_t i = 0; i < size; ++i) {
-    acc += arr[i];
-  }
-  // This division is potentially very unstable
-  return acc / size;
 }
 
 void dump_env(int argc, char *argv[]) {
@@ -81,53 +66,48 @@ bool parse_args(int argc, char *argv[], ProcessArgs *output) {
     output->point_count = 1e5;
     return false;
   }
-  output->point_count = strtoll(argv[1], NULL, 10);
+  Size_t total_point_count = strtoll(argv[1], NULL, 10);
+  assert((total_point_count > 0) && "Point count must be > 0");
+
+  output->total_point_count = total_point_count;
+  output->point_count = total_point_count / g_size;
+
   return true;
 }
-
-// Scatter i Gather -- do sprawdzenia!!!
-// Jest też coś takeigo jak Reduce
 
 int main(int argc, char * argv[]) {
   MPI_Init(&argc, &argv);
   init_global_state();
-  parse_args(argc, argv, &g_pargs);
   srand48(time(NULL) + g_rank * 31);
 
-  if (g_rank == 0) {
-    dump_env(argc, argv);
-  }
+  parse_args(argc, argv, &g_pargs);
+
+  // if (g_rank == 0) {
+  //   dump_env(argc, argv);
+  // }
 
   double start_time, elapsed_time;
+  double reduce_buffer;
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  start_time = MPI_Wtime() * 1e6;
-  double pi_estimate = estimate_pi(g_pargs.point_count);
-  elapsed_time = MPI_Wtime() * 1e6 - start_time;
-
   if (g_rank == 0) {
-    // I want to store them in the array,
-    // and later try to avoid imprecisions 
-    // resulting from adding numbers of vastly
-    // different values
-    double *results = (double *)calloc(g_size, sizeof(double));
-    results[0] = pi_estimate;
+    start_time = MPI_Wtime() * 1e6;
+  }
 
-    for (int worker_id = 1; worker_id < g_size; ++worker_id) {
-      MPI_Recv(&results[worker_id], 1, MPI_DOUBLE, worker_id, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    }
+  // Parsing args here for the second time just to have
+  // some sequential operations
+  parse_args(argc, argv, &g_pargs);
 
-    for (Size_t rid = 0; rid < g_size; ++rid) {
-      printf("%ld: %lf\n", rid, results[rid]);
-    }
+  double pi_estimate = estimate_pi(g_pargs.point_count);
 
-    double average = daverage(results, g_size);
-    printf("%lf\n", average);
-
-    // need to take average
-  } else {
-    MPI_Send(&pi_estimate, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&pi_estimate, &reduce_buffer, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  
+  if (g_rank == 0) {
+    double average = reduce_buffer / g_size;
+    elapsed_time = MPI_Wtime() * 1e6 - start_time;
+    printf("proc_count,total_point_count,point_count,avg_pi,time\n");
+    printf("%d,%ld,%ld,%lf,%lf\n", g_size, g_pargs.total_point_count,g_pargs.point_count, average, elapsed_time);
   }
 
   teardown_global_state();
