@@ -13,4 +13,9 @@ add_executable(${target} ${src_files})
 # target_include_directories(${target} PRIVATE ${ompi_dir})
 target_compile_options(${target} PRIVATE "-fopenmp")
 
+find_package(OpenMP REQUIRED)
+
+target_link_libraries(${target} PRIVATE OpenMP::OpenMP_C)
+
+
 
