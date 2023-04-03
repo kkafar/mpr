@@ -3,23 +3,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <errno.h>
 
 #define TIME_SCALE_FACTOR 1e6
 
 typedef uint64_t u64;
+typedef uint32_t u32;
+typedef int32_t i32;
+typedef int64_t i64;
 typedef double Data_t;
 
 typedef struct Args {
   u64 array_size;
+  i32 n_threads;
 } Args;
 
 Args g_args;
 
 void parse_args(const int argc, char *argv[], Args *out) {
-  assert((argc == 2 && "Single argument is expected"));
+  assert(((argc == 2 || argc == 3) && "One or two arguments are expected"));
 
-  // Assuming happy path here
   out->array_size = strtoull(argv[1], NULL, 10);
+  assert((errno == 0 && "Correct conversion for array_size"));
+
+  if (argc == 3) {
+    out->n_threads = strtol(argv[2], NULL, 10);
+    assert((errno == 0 && "Correct conversion for n_threads"));
+  } else {
+    out->n_threads = -1;
+  }
 }
 
 void print_arr(const Data_t *arr, const u64 size){
@@ -28,35 +40,103 @@ void print_arr(const Data_t *arr, const u64 size){
   }
 }
 
-
-int main(int argc, char * argv[]) {
-  srand48(731);
-  parse_args(argc, argv, &g_args);
-  
-  int tid, n_threads;
+void experiment_static(Data_t *data, u64 size) {
   double time_s, time_e;
-  Data_t *data = (Data_t *) malloc(sizeof(Data_t) * g_args.array_size);
 
-  printf("Filling array with random numbers\n");
-  
   time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
-  #pragma omp parallel private(tid, n_threads)
+  #pragma omp parallel
   {
-    tid = omp_get_thread_num();
-    printf("Thread %d is executing\n", tid);
-
-    if (tid == 0) {
-      n_threads = omp_get_num_threads();
-      printf("Total number of used threads: %d\n", n_threads);
-    }
-    #pragma omp for
+    #pragma omp for schedule(static, 2)
     for (u64 i = 0; i < g_args.array_size; ++i) {
       data[i] = drand48();
     }
   }
   time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
 
-  printf("Elapsed time: %lf us\n", time_e);
+  printf("static,%d,2,%ld,%lf\n", g_args.n_threads, g_args.array_size, time_e);
+
+  time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
+  #pragma omp parallel
+  {
+    #pragma omp for schedule(static)
+    for (u64 i = 0; i < g_args.array_size; ++i) {
+      data[i] = drand48();
+    }
+  }
+  time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
+
+  printf("static,%d,auto,%ld,%lf\n", g_args.n_threads, g_args.array_size, time_e);
+}
+
+void experiment_dynamic(Data_t *data, u64 size) {
+  double time_s, time_e;
+
+  time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
+  #pragma omp parallel
+  {
+    #pragma omp for schedule(dynamic, 2)
+    for (u64 i = 0; i < g_args.array_size; ++i) {
+      data[i] = drand48();
+    }
+  }
+  time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
+
+  printf("dynamic,%d,2,%ld,%lf\n", g_args.n_threads, g_args.array_size, time_e);
+
+  time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
+  #pragma omp parallel
+  {
+    #pragma omp for schedule(dynamic)
+    for (u64 i = 0; i < g_args.array_size; ++i) {
+      data[i] = drand48();
+    }
+  }
+  time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
+
+  printf("dynamic,%d,auto,%ld,%lf\n", g_args.n_threads, g_args.array_size, time_e);
+}
+
+void experiment_guided(Data_t *data, u64 size) {
+  double time_s, time_e;
+
+  time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
+  #pragma omp parallel
+  {
+    #pragma omp for schedule(guided, 2)
+    for (u64 i = 0; i < g_args.array_size; ++i) {
+      data[i] = drand48();
+    }
+  }
+  time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
+
+  printf("guided,%d,2,%ld,%lf\n", g_args.n_threads, g_args.array_size, time_e);
+
+  time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
+  #pragma omp parallel
+  {
+    #pragma omp for schedule(guided)
+    for (u64 i = 0; i < g_args.array_size; ++i) {
+      data[i] = drand48();
+    }
+  }
+  time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
+
+  printf("guided,%d,auto,%ld,%lf\n", g_args.n_threads, g_args.array_size, time_e);
+}
+
+
+int main(int argc, char * argv[]) {
+  srand48(731);
+  parse_args(argc, argv, &g_args);
+
+  Data_t *data = (Data_t *) malloc(sizeof(Data_t) * g_args.array_size);
+  assert((data != NULL && "Memory allocated"));
+
+  printf("type,threads,chunk,size,time\n");
+
+  experiment_static(data, g_args.array_size);
+  experiment_dynamic(data, g_args.array_size);
+  experiment_guided(data, g_args.array_size);
 
 	return 0;
 }
