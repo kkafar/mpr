@@ -118,8 +118,8 @@ then
       for (( nthreads = 1 ; nthreads <= 4 ; nthreads++ ))
       do
         echo "Running sid: ${sid}, nthreads: ${nthreads}, arrsize: ${arrsize}"
-        # ./main ${arrsize} ${nthreads} | tee "data/raw/sid_${sid}_th_${nthreads}_size_${arrsize}.csv"
-        ./main ${arrsize} ${nthreads}
+        ./main ${arrsize} ${nthreads} | tee "data/raw/sid_${sid}_th_${nthreads}_size_${arrsize}.csv"
+        # ./main ${arrsize} ${nthreads}
       done
     done
   done
