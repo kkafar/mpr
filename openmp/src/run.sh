@@ -24,6 +24,8 @@ function assert_bin_exists () {
   fi
 }
 
+rootdir="$(pwd)"
+
 n_series=10
 arr_size_base=100
 arr_size_step=100
@@ -34,6 +36,14 @@ should_run=1
 should_process_data=1
 should_archive=1
 
+# number of doubles in...
+one_GB=134217728
+two_GB=268435456
+three_GB=536870912
+four_GB=1073741824
+
+arr_sizes=( ${one_GB} ${two_GB} ${three_GB} ${four_GB} )
+# arr_sizes=( 32768 )
 
 OPTIND=1
 optstr="haAcCs:rRdDzZ"
@@ -92,6 +102,8 @@ shift $((OPTIND - 1))
 mkdir -p data/{raw,processed}
 mkdir -p data-arch
 
+outfile="data/processed/final.csv"
+
 if [[ "${should_compile}" -eq 1 ]]
 then
   gcc -fopenmp -std=c99 -O2 -o main main.c
@@ -101,14 +113,42 @@ if [[ "${should_run}" -eq 1 ]]
 then
   for (( sid = 1 ; sid <= ${n_series} ; sid++ ))
   do
-    for (( stepid = 1 ; stepid <= ${n_steps} ; stepid++ ))
+    for arrsize in "${arr_sizes[@]}"
     do
-      arrsize=$(( ${arr_size_base} + ${arr_size_step} * ${stepid} ))
-      ./main ${arrsize} | tee "data/raw/series_${sid}_size_${arrsize}.csv"
+      for (( nthreads = 1 ; nthreads <= 4 ; nthreads++ ))
+      do
+        echo "Running sid: ${sid}, nthreads: ${nthreads}, arrsize: ${arrsize}"
+        # ./main ${arrsize} ${nthreads} | tee "data/raw/sid_${sid}_th_${nthreads}_size_${arrsize}.csv"
+        ./main ${arrsize} ${nthreads}
+      done
     done
   done
 fi
 
+if [[ "${should_process_data}" -eq 1 ]]
+then
+  echo "Processing data..."
+  echo "sid,type,threads,chunk,size,time" > ${outfile}
+  for (( sid = 1 ; sid < ${n_series} ; sid++ ))
+  do
+    for arrsize in "${arr_sizes[@]}"
+    do
+      for (( nthreads = 1 ; nthreads <= 4 ; nthreads++ ))
+      do
+        echo "Processing sid: ${sid}, nthreads: ${nthreads}, arrsize: ${arrsize}"
+        cat "data/raw/sid_${sid}_th_${nthreads}_size_${arrsize}.csv" | tail -n 1 | awk -v sid=${sid} -F ',' '/.+/ {print sid "," $0}' >> ${outfile}
+      done
+    done
+  done
+fi
 
+if [[ ${should_archive} -eq 1 ]]
+then
+  echo "Archiving final data..."
+  timestamp=$(date +%Y-%m-%d-%H-%M-%S)
+  archivefile="data-arch/final-${timestamp}.csv"
+  mkdir -p "data-arch"
+  cp "${outfile}" "${archivefile}"
+fi
 
 

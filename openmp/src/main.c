@@ -43,15 +43,18 @@ void print_arr(const Data_t *arr, const u64 size){
 void experiment_static(Data_t *data, u64 size) {
   double time_s, time_e;
 
+  printf("Before first experiment\n");
   time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
   #pragma omp parallel
   {
     #pragma omp for schedule(static, 2)
-    for (u64 i = 0; i < g_args.array_size; ++i) {
+    for (u64 i = 0; i < size; ++i) {
       data[i] = drand48();
     }
   }
   time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
+
+  printf("After first experiment\n");
 
   printf("static,%d,2,%ld,%lf\n", g_args.n_threads, g_args.array_size, time_e);
 
@@ -59,7 +62,7 @@ void experiment_static(Data_t *data, u64 size) {
   #pragma omp parallel
   {
     #pragma omp for schedule(static)
-    for (u64 i = 0; i < g_args.array_size; ++i) {
+    for (u64 i = 0; i < size; ++i) {
       data[i] = drand48();
     }
   }
@@ -75,7 +78,7 @@ void experiment_dynamic(Data_t *data, u64 size) {
   #pragma omp parallel
   {
     #pragma omp for schedule(dynamic, 2)
-    for (u64 i = 0; i < g_args.array_size; ++i) {
+    for (u64 i = 0; i < size; ++i) {
       data[i] = drand48();
     }
   }
@@ -87,7 +90,7 @@ void experiment_dynamic(Data_t *data, u64 size) {
   #pragma omp parallel
   {
     #pragma omp for schedule(dynamic)
-    for (u64 i = 0; i < g_args.array_size; ++i) {
+    for (u64 i = 0; i < size; ++i) {
       data[i] = drand48();
     }
   }
@@ -103,7 +106,7 @@ void experiment_guided(Data_t *data, u64 size) {
   #pragma omp parallel
   {
     #pragma omp for schedule(guided, 2)
-    for (u64 i = 0; i < g_args.array_size; ++i) {
+    for (u64 i = 0; i < size; ++i) {
       data[i] = drand48();
     }
   }
@@ -115,7 +118,7 @@ void experiment_guided(Data_t *data, u64 size) {
   #pragma omp parallel
   {
     #pragma omp for schedule(guided)
-    for (u64 i = 0; i < g_args.array_size; ++i) {
+    for (u64 i = 0; i < size; ++i) {
       data[i] = drand48();
     }
   }
@@ -129,8 +132,15 @@ int main(int argc, char * argv[]) {
   srand48(731);
   parse_args(argc, argv, &g_args);
 
+  printf("Before alloc\n");
   Data_t *data = (Data_t *) malloc(sizeof(Data_t) * g_args.array_size);
   assert((data != NULL && "Memory allocated"));
+  printf("After alloc\n");
+  
+  if (g_args.n_threads != -1) {
+    omp_set_dynamic(0); // disable dynamic teams
+    omp_set_num_threads(g_args.n_threads); // set upper bounds for threads
+  }
 
   printf("type,threads,chunk,size,time\n");
 
