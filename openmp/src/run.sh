@@ -135,6 +135,8 @@ then
   cd data/raw
   for (( sid = 1 ; sid < ${n_series} ; sid++ ))
   do
+    files=$(ls . | grep "sid_${sid}_")
+    echo "Processing for series ${sid}: ${files}"
     ls . | grep "sid_${sid}_" | xargs -n 1 tail -n +2 | awk -v sid=${sid} -F ',' '/.+/ {print sid "," $0}' >> "../processed/final.csv"
   done
 fi
