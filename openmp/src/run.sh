@@ -141,7 +141,7 @@ fi
 
 if [[ ${should_archive} -eq 1 ]]
 then
-  cd rootdir
+  cd $rootdir
   echo "Archiving final data..."
   timestamp=$(date +%Y-%m-%d-%H-%M-%S)
   archivefile="data-arch/final-${timestamp}.csv"
