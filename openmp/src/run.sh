@@ -96,7 +96,10 @@ do
       should_archive=0
       ;;
     n)
-      arr_sizes=( 16384 ) #100 MB buffer
+      arr_sizes=( 131072 524288 2097152 8388608 33554432 ) #100 MB buffer
+      ;;
+    N)
+      ;;
   esac
 done
 
