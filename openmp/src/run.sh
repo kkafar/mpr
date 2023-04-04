@@ -12,6 +12,7 @@ function print_help () {
     -r/R -- whether to run the experiment
     -d/D -- whether to process data or not
     -z/Z -- whether to archive data or not
+    -n/N -- small/big array sizes
   """
 }
 
@@ -46,7 +47,7 @@ arr_sizes=( ${one_GB} ${two_GB} ${three_GB} ${four_GB} )
 # arr_sizes=( 32768 )
 
 OPTIND=1
-optstr="haAcCs:rRdDzZ"
+optstr="haAcCs:rRdDzZnN"
 
 while getopts "${optstr}" opt
 do
@@ -94,6 +95,8 @@ do
     Z)
       should_archive=0
       ;;
+    n)
+      arr_sizes=( 16384 ) #100 MB buffer
   esac
 done
 
