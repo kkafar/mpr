@@ -102,6 +102,8 @@ done
 
 shift $((OPTIND - 1))
 
+echo "Removing data/ directory to avoid conflicts..."
+rm -fr data/
 mkdir -p data/{raw,processed}
 mkdir -p data-arch
 
