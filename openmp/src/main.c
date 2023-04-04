@@ -9,6 +9,7 @@
 
 typedef uint64_t u64;
 typedef uint32_t u32;
+typedef uint16_t u16;
 typedef int32_t i32;
 typedef int64_t i64;
 typedef double Data_t;
@@ -42,13 +43,19 @@ void print_arr(const Data_t *arr, const u64 size){
 
 void experiment_static(Data_t *data, u64 size) {
   double time_s, time_e;
+	u16 rstate[3];
+  i32 tid;
 
   time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
-  #pragma omp parallel
+  #pragma omp parallel private(rstate, tid)
   {
-    #pragma omp for schedule(static, 2)
+    tid = omp_get_thread_num();
+		rstate[0] = tid;
+		rstate[1] = tid * 7;
+		rstate[2] = tid * 31;
+    #pragma omp for  schedule(static, 2)
     for (u64 i = 0; i < size; ++i) {
-      data[i] = drand48();
+      data[i] = erand48(rstate);
     }
   }
   time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
@@ -56,11 +63,15 @@ void experiment_static(Data_t *data, u64 size) {
   printf("static,%d,2,%ld,%lf\n", g_args.n_threads, g_args.array_size, time_e);
 
   time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
-  #pragma omp parallel
+  #pragma omp parallel private(rstate, tid)
   {
-    #pragma omp for schedule(static)
+    tid = omp_get_thread_num();
+		rstate[0] = tid;
+		rstate[1] = tid * 7;
+		rstate[2] = tid * 31;
+    #pragma omp for  schedule(static)
     for (u64 i = 0; i < size; ++i) {
-      data[i] = drand48();
+      data[i] = erand48(rstate);
     }
   }
   time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
@@ -70,13 +81,19 @@ void experiment_static(Data_t *data, u64 size) {
 
 void experiment_dynamic(Data_t *data, u64 size) {
   double time_s, time_e;
+	u16 rstate[3];
+  i32 tid;
 
   time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
-  #pragma omp parallel
+  #pragma omp parallel private(rstate, tid)
   {
-    #pragma omp for schedule(dynamic, 2)
+    tid = omp_get_thread_num();
+		rstate[0] = tid;
+		rstate[1] = tid * 7;
+		rstate[2] = tid * 31;
+    #pragma omp for  schedule(dynamic, 2)
     for (u64 i = 0; i < size; ++i) {
-      data[i] = drand48();
+      data[i] = erand48(rstate);
     }
   }
   time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
@@ -84,11 +101,15 @@ void experiment_dynamic(Data_t *data, u64 size) {
   printf("dynamic,%d,2,%ld,%lf\n", g_args.n_threads, g_args.array_size, time_e);
 
   time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
-  #pragma omp parallel
+  #pragma omp parallel private(rstate, tid)
   {
-    #pragma omp for schedule(dynamic)
+    tid = omp_get_thread_num();
+		rstate[0] = tid;
+		rstate[1] = tid * 7;
+		rstate[2] = tid * 31;
+    #pragma omp for  schedule(dynamic)
     for (u64 i = 0; i < size; ++i) {
-      data[i] = drand48();
+      data[i] = erand48(rstate);
     }
   }
   time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
@@ -98,13 +119,19 @@ void experiment_dynamic(Data_t *data, u64 size) {
 
 void experiment_guided(Data_t *data, u64 size) {
   double time_s, time_e;
+	u16 rstate[3];
+  i32 tid;
 
   time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
-  #pragma omp parallel
+  #pragma omp parallel private(rstate, tid)
   {
-    #pragma omp for schedule(guided, 2)
+    tid = omp_get_thread_num();
+		rstate[0] = tid;
+		rstate[1] = tid * 7;
+		rstate[2] = tid * 31;
+    #pragma omp for  schedule(guided, 2)
     for (u64 i = 0; i < size; ++i) {
-      data[i] = drand48();
+      data[i] = erand48(rstate);
     }
   }
   time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
@@ -112,11 +139,15 @@ void experiment_guided(Data_t *data, u64 size) {
   printf("guided,%d,2,%ld,%lf\n", g_args.n_threads, g_args.array_size, time_e);
 
   time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
-  #pragma omp parallel
+  #pragma omp parallel private(rstate, tid)
   {
-    #pragma omp for schedule(guided)
+    tid = omp_get_thread_num();
+		rstate[0] = tid;
+		rstate[1] = tid * 7;
+		rstate[2] = tid * 31;
+    #pragma omp for  schedule(guided)
     for (u64 i = 0; i < size; ++i) {
-      data[i] = drand48();
+      data[i] = erand48(rstate);
     }
   }
   time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
@@ -131,7 +162,7 @@ int main(int argc, char * argv[]) {
 
   Data_t *data = (Data_t *) malloc(sizeof(Data_t) * g_args.array_size);
   assert((data != NULL && "Memory allocated"));
-  
+
   if (g_args.n_threads != -1) {
     omp_set_dynamic(0); // disable dynamic teams
     omp_set_num_threads(g_args.n_threads); // set upper bounds for threads
