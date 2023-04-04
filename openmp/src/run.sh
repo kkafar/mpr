@@ -129,21 +129,16 @@ if [[ "${should_process_data}" -eq 1 ]]
 then
   echo "Processing data..."
   echo "sid,type,threads,chunk,size,time" > ${outfile}
+  cd data/raw
   for (( sid = 1 ; sid < ${n_series} ; sid++ ))
   do
-    for arrsize in "${arr_sizes[@]}"
-    do
-      for (( nthreads = 1 ; nthreads <= 4 ; nthreads++ ))
-      do
-        echo "Processing sid: ${sid}, nthreads: ${nthreads}, arrsize: ${arrsize}"
-        cat "data/raw/sid_${sid}_th_${nthreads}_size_${arrsize}.csv" | tail -n 1 | awk -v sid=${sid} -F ',' '/.+/ {print sid "," $0}' >> ${outfile}
-      done
-    done
+    ls . | grep "sid_${sid}_" | xargs -n 1 tail -n +2 | awk -v sid=${sid} -F ',' '/.+/ {print sid "," $0}' >> "../processed/final.csv"
   done
 fi
 
 if [[ ${should_archive} -eq 1 ]]
 then
+  cd rootdir
   echo "Archiving final data..."
   timestamp=$(date +%Y-%m-%d-%H-%M-%S)
   archivefile="data-arch/final-${timestamp}.csv"
