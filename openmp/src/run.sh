@@ -133,7 +133,7 @@ then
   echo "Processing data..."
   echo "sid,type,threads,chunk,size,time" > ${outfile}
   cd data/raw
-  for (( sid = 1 ; sid < ${n_series} ; sid++ ))
+  for (( sid = 1 ; sid <= ${n_series} ; sid++ ))
   do
     files=$(ls . | grep "sid_${sid}_")
     echo "Processing for series ${sid}: ${files}"
