@@ -17,12 +17,13 @@ if not plotdir.is_dir():
 assert plotdir.is_dir(), "Plotdir exists"
 
 
-# exctx='vcluster'
+exctx='vcluster'
+datafile = path.Path('data-arch', 'vcluster-final-2023-04-04-10-10-55.csv')
 # datafile = path.Path('data-arch', 'vcluster-final-2023-04-04-08-59-35.csv')
 # datafile = path.Path('data-arch', 'vcluster-final-2023-04-04-07-35-36.csv')
 
-exctx='pc'
-datafile = path.Path('data-arch', 'final-2023-04-04-09-31-20.csv')
+# exctx='pc'
+# datafile = path.Path('data-arch', 'final-2023-04-04-09-31-20.csv')
 
 assert datafile.is_file(), "Datafile exists and is a file"
 
