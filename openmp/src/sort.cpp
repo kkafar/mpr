@@ -32,7 +32,7 @@ static void parse_args(const int argc, char *argv[], Args *out) {
   assert((errno == 0 && "Correct conversion for array_size"));
 
   if (argc == 3) {
-    out->n_threads = std::strtol(argv[2], NULL, 10);
+    out->n_threads = std::strtol(argv[2], nullptr, 10);
     assert((errno == 0 && "Correct conversion for n_threads"));
   } else {
     out->n_threads = -1;
