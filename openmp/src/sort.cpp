@@ -1,3 +1,5 @@
+#include <cstdlib>
+#include <memory>
 #include <omp.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -6,6 +8,7 @@
 #include <errno.h>
 #include <vector>
 #include <algorithm>
+#include <cstdlib>
 
 #define TIME_SCALE_FACTOR 1e6
 
@@ -17,27 +20,26 @@ typedef int64_t i64;
 typedef double Data_t;
 
 typedef struct Args {
-  u64 array_size;
-  i32 n_threads;
+  uint64_t array_size;
+  int32_t n_threads;
 } Args;
 
 Args g_args;
 
-void parse_args(const int argc, char *argv[], Args *out) {
+static void parse_args(const int argc, char *argv[], Args *out) {
   assert(((argc == 2 || argc == 3) && "One or two arguments are expected"));
-
-  out->array_size = strtoull(argv[1], NULL, 10);
+  out->array_size = std::strtoull(argv[1], nullptr, 10);
   assert((errno == 0 && "Correct conversion for array_size"));
 
   if (argc == 3) {
-    out->n_threads = strtol(argv[2], NULL, 10);
+    out->n_threads = std::strtol(argv[2], NULL, 10);
     assert((errno == 0 && "Correct conversion for n_threads"));
   } else {
     out->n_threads = -1;
   }
 }
 
-void print_arr(const Data_t *arr, const u64 size){
+static void print_arr(const Data_t * const arr, const uint64_t size){
   for (u64 i = 0; i < size; ++i) {
     printf("%lf\n", arr[i]);
   }
@@ -90,7 +92,6 @@ void bucket_sort(Data_t *data, u64 size, i32 n_buckets) {
         buckets[static_cast<int>(data[i] * n_buckets)].push_back(data[i]);
       }
     }
-
 
     for (const auto& bucket : buckets) {
       for (Data_t el : bucket) {
