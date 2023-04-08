@@ -45,24 +45,13 @@ static void print_arr(const Data_t * const arr, const uint64_t size){
   }
 }
 
-void fill_array(Data_t *data, u64 size) {
-  double time_s, time_e;
-	u16 rstate[3];
-  i32 tid;
-
-  time_s = omp_get_wtime() * TIME_SCALE_FACTOR;
-  #pragma omp parallel private(rstate, tid)
-  {
-    tid = omp_get_thread_num();
-		rstate[0] = tid;
-		rstate[1] = tid * 7;
-		rstate[2] = tid * 31;
-    #pragma omp for schedule(static)
-    for (u64 i = 0; i < size; ++i) {
-      data[i] = erand48(rstate);
-    }
-  }
-  time_e = omp_get_wtime() * TIME_SCALE_FACTOR - time_s;
+// Should be executed only in OpenMP parallel execution context
+inline static int32_t init_rand_state(uint16_t *rstate) {
+  int32_t tid = omp_get_thread_num();
+  rstate[0] = tid * 3 + 11;
+  rstate[1] = tid * 7 + 13;
+  rstate[2] = tid * 31 + 29;
+  return tid;
 }
 
 void bucket_sort(Data_t *data, u64 size, i32 n_buckets) {
@@ -70,15 +59,10 @@ void bucket_sort(Data_t *data, u64 size, i32 n_buckets) {
   i32 tid = 1;
   i32 thread_range;
   std::vector<Data_t> buckets[n_buckets];
-  // std::vector<std::vector<Data_t>> buckets(n_buckets);
 
   #pragma omp parallel private(rstate, tid, buckets, thread_range) // ACHTUNG: what is copied here?
   {
-    tid = omp_get_thread_num();
-		rstate[0] = tid;
-		rstate[1] = tid * 7;
-		rstate[2] = tid * 31;
-
+    tid = init_rand_state(rstate);
     #pragma omp for schedule(static)
     for (u64 i = 0; i < size; ++i) {
       data[i] = erand48(rstate);
