@@ -106,16 +106,17 @@ int main(int argc, char * argv[]) {
   srand48(731);
   parse_args(argc, argv, &g_args);
 
-  Data_t *data = (Data_t *) malloc(sizeof(Data_t) * g_args.array_size);
-  assert((data != NULL && "Memory allocated"));
+  Data_t *data = new Data_t[g_args.array_size];
+  assert((data != nullptr && "Memory allocated"));
 
   if (g_args.n_threads != -1) {
     omp_set_dynamic(0); // disable dynamic teams
     omp_set_num_threads(g_args.n_threads); // set upper bounds for threads
   }
 
-  // fill_array(data, g_args.array_size);
   bucket_sort(data, g_args.array_size, 12);
+
+  delete[] data;
 	return 0;
 }
 
