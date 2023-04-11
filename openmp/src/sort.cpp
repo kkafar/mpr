@@ -12,11 +12,6 @@
 
 #define TIME_SCALE_FACTOR 1e6
 
-typedef uint64_t u64;
-typedef uint32_t u32;
-typedef uint16_t u16;
-typedef int32_t i32;
-typedef int64_t i64;
 typedef double Data_t;
 
 typedef struct Args {
@@ -40,7 +35,7 @@ static void parse_args(const int argc, char *argv[], Args *out) {
 }
 
 static void print_arr(const Data_t * const arr, const uint64_t size){
-  for (u64 i = 0; i < size; ++i) {
+  for (uint64_t i = 0; i < size; ++i) {
     printf("%lf\n", arr[i]);
   }
 }
@@ -54,24 +49,24 @@ inline static int32_t init_rand_state(uint16_t *rstate) {
   return tid;
 }
 
-void bucket_sort(Data_t *data, u64 size, i32 n_buckets) {
-  u16 rstate[3];
-  i32 tid = 1;
-  i32 thread_range;
+void bucket_sort(Data_t *data, uint64_t size, int32_t n_buckets) {
+  uint16_t rstate[3];
+  int32_t tid = 1;
+  int32_t thread_range;
   std::vector<Data_t> buckets[n_buckets];
 
   #pragma omp parallel private(rstate, tid, buckets, thread_range) // ACHTUNG: what is copied here?
   {
     tid = init_rand_state(rstate);
     #pragma omp for schedule(static)
-    for (u64 i = 0; i < size; ++i) {
+    for (uint64_t i = 0; i < size; ++i) {
       data[i] = erand48(rstate);
     }
     
     thread_range = 1 / (double)4; // ACHTUNG
 
     // #pragma omp for schedule(static)
-    for (u64 i = 0; i < size; ++i) {
+    for (uint64_t i = 0; i < size; ++i) {
       if (data[i] >= tid * thread_range && data[i] < (tid + 1) * thread_range) {
         buckets[static_cast<int>(data[i] * n_buckets)].push_back(data[i]);
       }
@@ -85,7 +80,7 @@ void bucket_sort(Data_t *data, u64 size, i32 n_buckets) {
     }
 
     #pragma omp for schedule(static)
-    for (u64 i = 0; i < n_buckets; ++i) {
+    for (uint64_t i = 0; i < n_buckets; ++i) {
       // WE NEED TO SORT IT MANUALLY MOST LIKELY
       std::sort(buckets[i].begin(), buckets[i].end()); 
     }
