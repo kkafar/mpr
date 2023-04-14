@@ -82,19 +82,21 @@ inline static int32_t init_rand_state(uint16_t *rstate) {
 }
 #endif // _OPENMP
  
-static void print_buckets(const std::vector<Data_t> *buckets, const int32_t n_buckets) {
+static void print_buckets(const std::vector<Data_t> *buckets, const int32_t n_buckets, const int32_t tid) {
 #ifdef _OPENMP
   #pragma omp barrier
 #endif
-  printf("------------\n");
-  for (int i = 0; i < n_buckets; ++i) {
-    printf("%d: ", i);
-    for (Data_t el : buckets[i]) {
-      printf("%lf ", el);
+  if (tid == 0) {
+    printf("------------\n");
+    for (int i = 0; i < n_buckets; ++i) {
+      printf("%d: ", i);
+      for (Data_t el : buckets[i]) {
+        printf("%lf ", el);
+      }
+      printf("\n");
     }
-    printf("\n");
+    printf("------------\n");
   }
-  printf("------------\n");
 #ifdef _OPENMP
   #pragma omp barrier
 #endif
@@ -156,10 +158,6 @@ static void bucket_sort_1(Data_t *data, const uint64_t size, const int32_t n_buc
     TIME_MEASURE_BEGIN(scatter_time);
     thread_range = static_cast<double>(1.0) / static_cast<double>(g_args.n_threads);
 
-    if (tid == 0) {
-      print_buckets(buckets.data(), n_buckets);
-    }
-
     // Every thread reads entire array
     for (uint64_t i = 0; i < size; ++i) {
       if (data[i] >= tid * thread_range && data[i] < (tid + 1) * thread_range) {
@@ -168,11 +166,6 @@ static void bucket_sort_1(Data_t *data, const uint64_t size, const int32_t n_buc
     }
 
     TIME_MEASURE_END(scatter_time);
-
-    // Printing for debug purposes
-    if (tid == 0) {
-      print_buckets(buckets.data(), n_buckets);
-    }
 
     TIME_MEASURE_BEGIN(sort_time);
     // Don't we need synchronization (barrier) here?
@@ -188,8 +181,6 @@ static void bucket_sort_1(Data_t *data, const uint64_t size, const int32_t n_buc
       std::sort(bucket.begin(), bucket.end()); 
     }
     TIME_MEASURE_END(sort_time);
-
-    print_buckets(buckets.data(), n_buckets);
 
     TIME_MEASURE_BEGIN(gather_time);
     // Each thread needs to count how many elements in lower buckets
