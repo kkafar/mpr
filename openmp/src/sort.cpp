@@ -21,6 +21,7 @@
 #endif
 
 #define LOG(...) printf(__VA_ARGS__)
+#define LOG_ERROR(...) fprintf(stderr, __VA_ARGS__);
 
 #define TIME_SCALE_FACTOR 1e6
 #define TIME_MEASURE_BEGIN(x) ((x) = omp_get_wtime() * TIME_SCALE_FACTOR)
@@ -230,6 +231,7 @@ int main(int argc, char * argv[]) {
   ExpCfg cfg;
   cfg.args = g_args;
   cfg.bucket_size = g_args.arr_size / g_args.n_buckets;
+
   ExpFnHandle_t experiment_fn;
   if (g_args.exp_type == ExpType::Async) {
     experiment_fn = bucket_sort_1;
@@ -242,7 +244,7 @@ int main(int argc, char * argv[]) {
     cfg.series_id = sid;
     experiment_fn(data, cfg).print_as_csv();
     if (!summary(data, g_args)) {
-      LOG("ERROR: THE ARRAY IS NOT SORTED PROPERLY\n");
+      LOG_ERROR("ERROR: THE ARRAY IS NOT SORTED PROPERLY\n");
     }
   }
 
@@ -273,7 +275,7 @@ static void parse_args(const int argc, char *argv[], Args *out) {
     } else if (exp_type_str == "async") {
       out->exp_type = ExpType::Async;
     } else {
-      LOG("ERROR: Invalid experiment type %s\n", argv[5]);
+      LOG_ERROR("ERROR: Invalid experiment type %s\n", argv[5]);
       std::exit(EXIT_FAILURE);
     }
   }
