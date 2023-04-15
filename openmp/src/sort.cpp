@@ -83,14 +83,9 @@ ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
   result.cfg = cfg;
 
   std::vector<std::vector<Data_t>> buckets(cfg.args.n_buckets);
-  // std::vector<Data_t> buckets[cfg.args.n_buckets];
 
   TIME_MEASURE_BEGIN(result.total_time);
 
-  // Couldn't get the program to work with private buckets...
-  // I'm also not sure whether there is any synchornization on shared variable,
-  // could not f  #pragma omp single ind the info in reference.
-  // #pragma omp parallel private(rstate, tid, buckets, thread_range)
   #pragma omp parallel private(rstate, thread_range) shared(data, buckets, cfg)
   {
     // threadprivate memory
