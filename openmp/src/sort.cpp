@@ -13,19 +13,157 @@
 #include <algorithm>
 #include <cstdlib>
 
+#ifdef DEBUG
+#define LOG_DEBUG(...) printf(__VA_ARGS__)
+#else 
+#define LOG_DEBUG(...) do {} while(0)
+#endif
+
+#define LOG(...) printf(__VA_ARGS__)
+
 #define TIME_SCALE_FACTOR 1e6
 #define TIME_MEASURE_BEGIN(x) ((x) = omp_get_wtime() * TIME_SCALE_FACTOR)
 #define TIME_MEASURE_END(x) ((x) = omp_get_wtime() * TIME_SCALE_FACTOR - (x))
 
 typedef double Data_t;
+typedef uint64_t ArrSize_t;
+typedef uint64_t BucketCount_t;
+typedef int32_t ThreadCount_t;
 
 typedef struct Args {
-  uint64_t array_size;
-  int32_t n_threads;
-  int32_t n_buckets;
+  ArrSize_t array_size;
+  BucketCount_t n_buckets;
+  ThreadCount_t n_threads;
 } Args;
 
 Args g_args;
+
+static void parse_args(const int argc, char *argv[], Args *out);
+static void dump_cfg();
+static void print_arr(const Data_t * const arr, const ArrSize_t size);
+static void print_buckets(const std::vector<Data_t> *buckets, const BucketCount_t n_buckets, const int32_t tid);
+static bool summary(Data_t *data, const Args &args);
+
+// Initializes random state for erand48 with arbitrary bytes.
+// Assumes that rstate consists of 3 * 16 bytes.
+inline static int32_t init_rand_state(uint16_t *rstate);
+
+static void bucket_sort_1(Data_t *data, const Args args) {
+  LOG_DEBUG("bucket_sort_1 called with data: %p, size: %ld, n_buckets: %ld, n_threads: %d\n", data, args.array_size, args.n_buckets, args.n_threads);
+
+  uint16_t rstate[3];
+  double thread_range;
+
+  double total_time, draw_time, scatter_time, sort_time, gather_time;
+
+  std::vector<std::vector<Data_t>> buckets(args.n_buckets);
+
+  TIME_MEASURE_BEGIN(total_time);
+
+  // Couldn't get the program to work with private buckets...
+  // I'm also not sure whether there is any synchornization on shared variable,
+  // could not f  #pragma omp single ind the info in reference.
+  // #pragma omp parallel private(rstate, tid, buckets, thread_range)
+  #pragma omp parallel private(rstate, thread_range) shared(buckets, args)
+  {
+    // threadprivate memory
+    double p_draw_time = 0, p_scatter_time = 0, p_sort_time = 0, p_gather_time = 0;
+
+    TIME_MEASURE_BEGIN(p_draw_time);
+    const int tid = init_rand_state(rstate);
+
+    #pragma omp for schedule(static)
+    for (ArrSize_t i = 0; i < args.array_size; ++i) {
+      data[i] = erand48(rstate);
+    }
+    TIME_MEASURE_END(p_draw_time);
+
+    
+    TIME_MEASURE_BEGIN(p_scatter_time);
+    thread_range = static_cast<double>(1.0) / static_cast<double>(g_args.n_threads);
+
+    // Every thread reads entire array
+    for (ArrSize_t i = 0; i < args.array_size; ++i) {
+      if (data[i] >= tid * thread_range && data[i] < (tid + 1) * thread_range) {
+        buckets[(static_cast<int>(data[i] * args.n_buckets))].push_back(data[i]);
+      }
+    }
+    TIME_MEASURE_END(p_scatter_time);
+
+    TIME_MEASURE_BEGIN(p_sort_time);
+    // Don't we need synchronization (barrier) here?
+    // What happens if one thread is assigned a bucket which is still
+    // being filled in earlier for? Documentation states that:
+    // "There is a default barrier at the end of each worksharing construct unless
+    // the `nowait` clause is present.", but I have not found anything on synchronization
+    // before the worksharing construct.
+    #pragma omp for schedule(static)
+    for (BucketCount_t i = 0; i < args.n_buckets; ++i) {
+      std::sort(std::begin(buckets[i]), std::end(buckets[i])); 
+    }
+    TIME_MEASURE_END(p_sort_time);
+
+    TIME_MEASURE_BEGIN(p_gather_time);
+    // These are threadprivate, so initialization value holds for every thread
+    ArrSize_t prev_el_count = 0;
+    BucketCount_t last_j = 0;
+    
+    #pragma omp for schedule(static)
+    for (BucketCount_t i = 0; i < args.n_buckets; ++i) {
+      // Small optimization: let's assume THIS thread has been assigned with buckets b, ..., b + n
+      // To count how many elements there are in buckets 0, 1, ..., b - 1 we need to iterate over all of them,
+      // however it is sufficient to do it once -- for bucket b. For buckets b + 1, ..., b + n we can use value
+      // computed for previous bucket. 
+      //
+      // prev_el_count(i) = sum(el_count(j) for j in 0, ..., i - 1) when i = b
+      // prev_el_count(i) = prev_el_count(i - 1) + el_count(i) when i > b
+      for (BucketCount_t j = last_j; j < i; ++j) {
+        prev_el_count += buckets[j].size();
+      }
+      last_j = i;
+      ArrSize_t el_i = prev_el_count;
+      for (Data_t el : buckets[i]) {
+        data[el_i++] = el;
+      }
+    }
+    TIME_MEASURE_END(p_gather_time);
+
+    // Need to inject out the measured values into the outer scope
+    // This is not part of the algorithm so we stop measuring time
+    if (tid == 0) {
+      draw_time = p_draw_time;
+      scatter_time = p_scatter_time;
+      sort_time = p_sort_time;
+      gather_time = p_gather_time;
+    }
+  }
+  TIME_MEASURE_END(total_time);
+
+  LOG("total_time: %lf\ndraw_time: %lf\nscatter_time: %lf\nsort_time: %lf\ngather_time: %lf\n", total_time, draw_time, scatter_time, sort_time, gather_time);
+}
+
+int main(int argc, char * argv[]) {
+  srand48(time(nullptr));
+  parse_args(argc, argv, &g_args);
+  dump_cfg();
+
+  Data_t *data = new Data_t[g_args.array_size];
+  assert((data != nullptr && "Memory allocated"));
+
+  if (g_args.n_threads != -1) {
+    omp_set_dynamic(0); // disable dynamic teams
+    omp_set_num_threads(g_args.n_threads); // set upper bounds for threads
+  }
+
+  bucket_sort_1(data, g_args);
+  
+  if (!summary(data, g_args)) {
+    LOG("ERROR: THE ARRAY IS NOT SORTED PROPERLY\n");
+  }
+
+  delete[] data;
+	return 0;
+}
 
 static void parse_args(const int argc, char *argv[], Args *out) {
   assert(((argc == 2 || argc == 3 || argc == 4) && "One, two or three arguments are expected"));
@@ -54,11 +192,11 @@ static void dump_cfg() {
 #else
   printf("Execution context: Sync\n");
 #endif
-  printf("n_elems: %ld\nn_threads: %d\nn_buckets: %d\n", g_args.array_size, g_args.n_threads, g_args.n_buckets);
+  printf("n_elems: %ld\nn_threads: %d\nn_buckets: %ld\n", g_args.array_size, g_args.n_threads, g_args.n_buckets);
   printf("--------------------\n");
 }
 
-static void print_arr(const Data_t * const arr, const uint64_t size) {
+static void print_arr(const Data_t * const arr, const ArrSize_t size) {
   for (uint64_t i = 0; i < size; ++i) {
     printf("%lf\n", arr[i]);
   }
@@ -81,149 +219,35 @@ inline static int32_t init_rand_state(uint16_t *rstate) {
   return tid;
 }
 #endif // _OPENMP
- 
-static void print_buckets(const std::vector<Data_t> *buckets, const int32_t n_buckets, const int32_t tid) {
-#ifdef _OPENMP
-  #pragma omp barrier
-#endif
-  if (tid == 0) {
-    printf("------------\n");
-    for (int i = 0; i < n_buckets; ++i) {
-      printf("%d: ", i);
-      for (Data_t el : buckets[i]) {
-        printf("%lf ", el);
-      }
-      printf("\n");
+
+static void print_buckets(const std::vector<Data_t> *buckets, const BucketCount_t n_buckets, const int32_t tid) {
+  printf("------------\n");
+  for (int i = 0; i < n_buckets; ++i) {
+    printf("%d: ", i);
+    for (Data_t el : buckets[i]) {
+      printf("%lf ", el);
     }
-    printf("------------\n");
+    printf("\n");
   }
-#ifdef _OPENMP
-  #pragma omp barrier
-#endif
+  printf("------------\n");
 }
 
-static void bucket_sort_sync(Data_t *data, const uint64_t size, const int32_t n_buckets) {
-  std::vector<Data_t> *buckets = new std::vector<Data_t>[n_buckets];
-  for (uint64_t i = 0; i < size; ++i) {
-    data[i] = drand48();
-  }
-  for (uint64_t i = 0; i < size; ++i) {
-    buckets[static_cast<int>(data[i] * n_buckets)].push_back(data[i]);
-  }
-  for (int32_t i = 0; i < n_buckets; ++i) {
-    std::sort(buckets[i].begin(), buckets[i].end());
-  }
-  uint64_t el_i = 0;
-  for (int32_t bucket_i = 0; bucket_i < n_buckets; ++bucket_i) {
-    for (Data_t el : buckets[bucket_i]) {
-      data[el_i++] = el;
+static bool summary(Data_t *data, const Args &args) {
+  bool sorted = true;
+  for (uint64_t i = 0; i < args.array_size; ++i) {
+    if (i > 0 && data[i - 1] > data[i]) {
+// #ifdef DEBUG
+//       printf("  <--- X");
+// #endif
+      sorted = false;
     }
+// #ifdef DEBUG
+//     printf("\n%lf", data[i]);
+// #endif
   }
-  print_arr(data, size);
-  delete[] buckets;
-}
-
-#ifdef _OPENMP
-static void bucket_sort_1(Data_t *data, const uint64_t size, const int32_t n_buckets) {
-  printf("bucket_sort_1 called with data: %p, size: %ld, n_buckets: %d\n", data, size, n_buckets);
-
-  uint16_t rstate[3];
-  int tid = 1;
-  double thread_range;
-  double draw_time, scatter_time, sort_time, gather_time, total_time;
-
-  // std::vector<Data_t> *buckets = new std::vector<Data_t>[n_buckets];
-  std::vector<std::vector<Data_t>> buckets(n_buckets);
-
-  printf("Before parrallel section\n");
-
-  TIME_MEASURE_BEGIN(total_time);
-
-  // Couldn't get the program to work with private buckets...
-  // I'm also not sure whether there is any synchornization on shared variable,
-  // could not find the info in reference.
-  // #pragma omp parallel private(rstate, tid, buckets, thread_range)
-  #pragma omp parallel private(rstate, tid, thread_range, draw_time, scatter_time, sort_time, gather_time, total_time)
-  {
-    TIME_MEASURE_BEGIN(draw_time);
-    tid = init_rand_state(rstate);
-
-    #pragma omp for schedule(static)
-    for (uint64_t i = 0; i < size; ++i) {
-      data[i] = erand48(rstate);
-    }
-
-    TIME_MEASURE_END(draw_time);
-    
-    TIME_MEASURE_BEGIN(scatter_time);
-    thread_range = static_cast<double>(1.0) / static_cast<double>(g_args.n_threads);
-
-    // Every thread reads entire array
-    for (uint64_t i = 0; i < size; ++i) {
-      if (data[i] >= tid * thread_range && data[i] < (tid + 1) * thread_range) {
-        buckets.at(static_cast<int>(data[i] * n_buckets)).push_back(data[i]);
-      }
-    }
-
-    TIME_MEASURE_END(scatter_time);
-
-    TIME_MEASURE_BEGIN(sort_time);
-    // Don't we need synchronization (barrier) here?
-    // What happens if one thread is assigned a bucket which is still
-    // being filled in earlier for? Documentation states that:
-    // "There is a default barrier at the end of each worksharing construct unless
-    // the `nowait` clause is present.", but I have not found anything on synchronization
-    // before the worksharing construct.
-    #pragma omp for schedule(static)
-    for (uint64_t i = 0; i < n_buckets; ++i) {
-      // WE NEED TO SORT IT MANUALLY MOST LIKELY
-      std::vector<Data_t> &bucket = buckets[i];
-      std::sort(bucket.begin(), bucket.end()); 
-    }
-    TIME_MEASURE_END(sort_time);
-
-    TIME_MEASURE_BEGIN(gather_time);
-    // Each thread needs to count how many elements in lower buckets
-    if (tid == 0) {
-      int j = 0;
-      for (uint64_t i = 0; i < n_buckets; ++i) {
-        for (Data_t el : buckets[i]) {
-          data[j++] = el;
-        }
-      }
-    }
-    TIME_MEASURE_END(gather_time);
-  }
-  TIME_MEASURE_END(total_time);
-
-  // delete[] buckets;
-  print_arr(data, size);
-}
-#endif // _OPENMP
-
-
-int main(int argc, char * argv[]) {
-  srand48(time(nullptr));
-  parse_args(argc, argv, &g_args);
-  dump_cfg();
-
-  Data_t *data = new Data_t[g_args.array_size];
-  assert((data != nullptr && "Memory allocated"));
-
-#ifdef _OPENMP
-  if (g_args.n_threads != -1) {
-    omp_set_dynamic(0); // disable dynamic teams
-    omp_set_num_threads(g_args.n_threads); // set upper bounds for threads
-  }
-
-  g_args.n_threads = omp_get_num_threads();
-
-  bucket_sort_1(data, g_args.array_size, g_args.n_buckets);
-#else
-  bucket_sort_sync(data, g_args.array_size, g_args.n_buckets);
-#endif
-
-  delete[] data;
-	return 0;
+// #ifdef DEBUG
+//   printf("\n");
+// #endif
+  return sorted;
 }
 
