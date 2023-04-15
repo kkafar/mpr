@@ -66,7 +66,7 @@ struct ExpResult {
 static void parse_args(const int argc, char *argv[], Args *out);
 static void dump_cfg();
 static void print_arr(const Data_t * const arr, const ArrSize_t size);
-static void print_buckets(const std::vector<Data_t> *buckets, const BucketCount_t n_buckets, const int32_t tid);
+static void print_buckets(const std::vector<std::vector<Data_t>> &buckets);
 static bool summary(Data_t *data, const Args &args);
 
 // Initializes random state for erand48 with arbitrary bytes.
@@ -254,9 +254,9 @@ inline static int32_t init_rand_state(uint16_t *rstate) {
 }
 #endif // _OPENMP
 
-static void print_buckets(const std::vector<Data_t> *buckets, const BucketCount_t n_buckets, const int32_t tid) {
+static void print_buckets(const std::vector<std::vector<Data_t>> &buckets) {
   printf("------------\n");
-  for (int i = 0; i < n_buckets; ++i) {
+  for (int i = 0; i < buckets.size(); ++i) {
     printf("%d: ", i);
     for (Data_t el : buckets[i]) {
       printf("%lf ", el);
