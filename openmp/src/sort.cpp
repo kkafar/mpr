@@ -25,23 +25,24 @@
 #define TIME_MEASURE_BEGIN(x) ((x) = omp_get_wtime() * TIME_SCALE_FACTOR)
 #define TIME_MEASURE_END(x) ((x) = omp_get_wtime() * TIME_SCALE_FACTOR - (x))
 
-typedef double Data_t;
+using Data_t = double;
+using ArrSize_t = uint64_t;
+using BucketCount_t = uint64_t;
+using ThreadCount_t = int32_t;
 
 struct Args {
-  using ArrSize_t = uint64_t;
-  using BucketCount_t = uint64_t;
-  using ThreadCount_t = int32_t;
   ArrSize_t array_size;
   BucketCount_t n_buckets;
   ThreadCount_t n_threads;
-};
+} g_args;
 
-Args g_args;
+struct ExperimentResult {
+};
 
 static void parse_args(const int argc, char *argv[], Args *out);
 static void dump_cfg();
-static void print_arr(const Data_t * const arr, const Args::ArrSize_t size);
-static void print_buckets(const std::vector<Data_t> *buckets, const Args::BucketCount_t n_buckets, const int32_t tid);
+static void print_arr(const Data_t * const arr, const ArrSize_t size);
+static void print_buckets(const std::vector<Data_t> *buckets, const BucketCount_t n_buckets, const int32_t tid);
 static bool summary(Data_t *data, const Args &args);
 
 // Initializes random state for erand48 with arbitrary bytes.
@@ -73,7 +74,7 @@ static void bucket_sort_1(Data_t *data, const Args args) {
     const int tid = init_rand_state(rstate);
 
     #pragma omp for schedule(static)
-    for (Args::ArrSize_t i = 0; i < args.array_size; ++i) {
+    for (ArrSize_t i = 0; i < args.array_size; ++i) {
       data[i] = erand48(rstate);
     }
     TIME_MEASURE_END(p_draw_time);
@@ -84,7 +85,7 @@ static void bucket_sort_1(Data_t *data, const Args args) {
 
     // Every thread reads entire array (starting from the same index)
     // TODO: Reorganize so that threads do not read same indexes at the same time
-    for (Args::ArrSize_t i = 0; i < args.array_size; ++i) {
+    for (ArrSize_t i = 0; i < args.array_size; ++i) {
       if (data[i] >= tid * thread_range && data[i] < (tid + 1) * thread_range) {
         buckets[(static_cast<int>(data[i] * args.n_buckets))].push_back(data[i]);
       }
@@ -99,18 +100,18 @@ static void bucket_sort_1(Data_t *data, const Args args) {
     // the `nowait` clause is present.", but I have not found anything on synchronization
     // before the worksharing construct.
     #pragma omp for schedule(static)
-    for (Args::BucketCount_t i = 0; i < args.n_buckets; ++i) {
+    for (BucketCount_t i = 0; i < args.n_buckets; ++i) {
       std::sort(std::begin(buckets[i]), std::end(buckets[i])); 
     }
     TIME_MEASURE_END(p_sort_time);
 
     TIME_MEASURE_BEGIN(p_gather_time);
     // These are threadprivate, so initialization value holds for every thread
-    Args::ArrSize_t prev_el_count = 0;
-    Args::BucketCount_t last_j = 0;
+    ArrSize_t prev_el_count = 0;
+    BucketCount_t last_j = 0;
     
     #pragma omp for schedule(static)
-    for (Args::BucketCount_t i = 0; i < args.n_buckets; ++i) {
+    for (BucketCount_t i = 0; i < args.n_buckets; ++i) {
       // Small optimization: let's assume THIS thread has been assigned with buckets b, ..., b + n
       // To count how many elements there are in buckets 0, 1, ..., b - 1 we need to iterate over all of them,
       // however it is sufficient to do it once -- for bucket b. For buckets b + 1, ..., b + n we can use value
@@ -118,11 +119,11 @@ static void bucket_sort_1(Data_t *data, const Args args) {
       //
       // prev_el_count(i) = sum(el_count(j) for j in 0, ..., i - 1) when i = b
       // prev_el_count(i) = prev_el_count(i - 1) + el_count(i) when i > b
-      for (Args::BucketCount_t j = last_j; j < i; ++j) {
+      for (BucketCount_t j = last_j; j < i; ++j) {
         prev_el_count += buckets[j].size();
       }
       last_j = i;
-      Args::ArrSize_t el_i = prev_el_count;
+      ArrSize_t el_i = prev_el_count;
       for (Data_t el : buckets[i]) {
         data[el_i++] = el;
       }
@@ -197,7 +198,7 @@ static void dump_cfg() {
   printf("--------------------\n");
 }
 
-static void print_arr(const Data_t * const arr, const Args::ArrSize_t size) {
+static void print_arr(const Data_t * const arr, const ArrSize_t size) {
   for (uint64_t i = 0; i < size; ++i) {
     printf("%lf\n", arr[i]);
   }
@@ -221,7 +222,7 @@ inline static int32_t init_rand_state(uint16_t *rstate) {
 }
 #endif // _OPENMP
 
-static void print_buckets(const std::vector<Data_t> *buckets, const Args::BucketCount_t n_buckets, const int32_t tid) {
+static void print_buckets(const std::vector<Data_t> *buckets, const BucketCount_t n_buckets, const int32_t tid) {
   printf("------------\n");
   for (int i = 0; i < n_buckets; ++i) {
     printf("%d: ", i);
