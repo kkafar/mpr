@@ -12,6 +12,7 @@
 #include <vector>
 #include <algorithm>
 #include <cstdlib>
+#include <string>
 
 #ifdef DEBUG
 #define LOG_DEBUG(...) printf(__VA_ARGS__)
@@ -25,18 +26,28 @@
 #define TIME_MEASURE_BEGIN(x) ((x) = omp_get_wtime() * TIME_SCALE_FACTOR)
 #define TIME_MEASURE_END(x) ((x) = omp_get_wtime() * TIME_SCALE_FACTOR - (x))
 
+struct ExpResult;
+struct ExpCfg;
+
 using Data_t = double;
 using ArrSize_t = uint64_t;
 using BucketSize_t = uint64_t;
 using BucketCount_t = uint64_t;
 using ThreadCount_t = int32_t;
 using SeriesCount_t = int32_t;
+using ExpFnHandle_t = ExpResult (*)(Data_t *, const ExpCfg);
+
+enum ExpType {
+  Async,
+  Sync,
+};
 
 struct Args {
   ArrSize_t arr_size;
   BucketCount_t n_buckets;
   ThreadCount_t n_threads;
   SeriesCount_t n_series;
+  ExpType exp_type;
 } g_args;
 
 struct ExpCfg {
@@ -219,11 +230,17 @@ int main(int argc, char * argv[]) {
   ExpCfg cfg;
   cfg.args = g_args;
   cfg.bucket_size = g_args.arr_size / g_args.n_buckets;
+  ExpFnHandle_t experiment_fn;
+  if (g_args.exp_type == ExpType::Async) {
+    experiment_fn = bucket_sort_1;
+  } else {
+    experiment_fn = bucket_sort_sync;
+  }
 
   ExpResult::print_header();
   for (SeriesCount_t sid = 0; sid < g_args.n_series; ++sid) {
     cfg.series_id = sid;
-    bucket_sort_1(data, cfg).print_as_csv();
+    experiment_fn(data, cfg).print_as_csv();
     if (!summary(data, g_args)) {
       LOG("ERROR: THE ARRAY IS NOT SORTED PROPERLY\n");
     }
@@ -234,7 +251,7 @@ int main(int argc, char * argv[]) {
 }
 
 static void parse_args(const int argc, char *argv[], Args *out) {
-  assert(((argc == 5) && "Four arguments are expected"));
+  assert(((argc == 5 || argc == 6) && "Four or five arguments are expected"));
 
   out->arr_size = std::strtoull(argv[1], nullptr, 10);
   assert((errno == 0 && "Correct conversion for arr_size"));
@@ -247,6 +264,19 @@ static void parse_args(const int argc, char *argv[], Args *out) {
 
   out->n_series = std::strtol(argv[4], nullptr, 10);
   assert((errno == 0 && "Correct conversion for n_series"));
+
+  out->exp_type = ExpType::Async;
+  if (argc == 6) {
+    std::string exp_type_str{argv[5]};
+    if (exp_type_str == "sync") {
+      out->exp_type = ExpType::Sync;
+    } else if (exp_type_str == "async") {
+      out->exp_type = ExpType::Async;
+    } else {
+      LOG("ERROR: Invalid experiment type %s\n", argv[5]);
+      std::exit(EXIT_FAILURE);
+    }
+  }
 }
 
 static void dump_cfg() {
