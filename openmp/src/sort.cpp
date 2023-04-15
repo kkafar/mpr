@@ -32,7 +32,6 @@ using BucketCount_t = uint64_t;
 using ThreadCount_t = int32_t;
 using SeriesCount_t = int32_t;
 
-
 struct Args {
   ArrSize_t arr_size;
   BucketCount_t n_buckets;
@@ -105,7 +104,6 @@ ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
       data[i] = erand48(rstate);
     }
     TIME_MEASURE_END(p_result.draw_time);
-
     
     TIME_MEASURE_BEGIN(p_result.scatter_time);
     thread_range = static_cast<double>(1.0) / static_cast<double>(cfg.args.n_threads);
@@ -200,7 +198,6 @@ int main(int argc, char * argv[]) {
       LOG("ERROR: THE ARRAY IS NOT SORTED PROPERLY\n");
     }
   }
-  
 
   delete[] data;
 	return 0;
