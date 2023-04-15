@@ -82,7 +82,8 @@ static void bucket_sort_1(Data_t *data, const Args args) {
     TIME_MEASURE_BEGIN(p_scatter_time);
     thread_range = static_cast<double>(1.0) / static_cast<double>(g_args.n_threads);
 
-    // Every thread reads entire array
+    // Every thread reads entire array (starting from the same index)
+    // TODO: Reorganize so that threads do not read same indexes at the same time
     for (Args::ArrSize_t i = 0; i < args.array_size; ++i) {
       if (data[i] >= tid * thread_range && data[i] < (tid + 1) * thread_range) {
         buckets[(static_cast<int>(data[i] * args.n_buckets))].push_back(data[i]);
