@@ -73,6 +73,41 @@ static bool summary(Data_t *data, const Args &args);
 // Assumes that rstate consists of 3 * 16 bytes.
 inline static int32_t init_rand_state(uint16_t *rstate);
 
+ExpResult bucket_sort_sync(Data_t *data, const ExpCfg cfg) {
+  ExpResult result;
+  result.cfg = cfg;
+
+  std::vector<std::vector<Data_t>> buckets(cfg.args.n_buckets);
+
+  TIME_MEASURE_BEGIN(result.total_time);
+
+  TIME_MEASURE_BEGIN(result.draw_time);
+  for (ArrSize_t i = 0; i < cfg.args.arr_size; ++i)
+    data[i] = drand48();
+  TIME_MEASURE_END(result.draw_time);
+
+  TIME_MEASURE_BEGIN(result.scatter_time);
+  for (ArrSize_t i = 0; i < cfg.args.arr_size; ++i)
+    buckets[(static_cast<int>(data[i] * cfg.args.n_buckets))].push_back(data[i]);
+  TIME_MEASURE_END(result.scatter_time);
+
+  TIME_MEASURE_BEGIN(result.sort_time);
+  for (auto &bucket : buckets)
+    std::sort(std::begin(bucket), std::end(bucket));
+  TIME_MEASURE_END(result.sort_time);
+
+  TIME_MEASURE_BEGIN(result.gather_time);
+  ArrSize_t el_i = 0;
+  for (auto &bucket : buckets)
+    for (Data_t el : bucket)
+      data[el_i++] = el;
+  TIME_MEASURE_END(result.gather_time);
+
+  TIME_MEASURE_END(result.total_time);
+
+  return result;
+}
+
 ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
   LOG_DEBUG("bucket_sort_1 called with data: %p, size: %ld, n_buckets: %ld, n_threads: %d\n", data, cfg.args.arr_size, cfg.args.n_buckets, cfg.args.n_threads);
 
