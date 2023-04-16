@@ -1,4 +1,9 @@
-#!/bin/bash
+#!/bin/bash -l
+#SBATCH --nodes 1
+#SBATCH --ntasks 1
+#SBATCH --time=12:00:00
+#SBATCH --partition=plgrid
+#SBATCH --account=plgmpr23-cpu
 
 function print_help () {
   echo """
