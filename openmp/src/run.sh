@@ -58,13 +58,14 @@ exp_type="async"
 is_dry_run=0
 
 # number of doubles in...
+quarter_GB=33554432
 half_GB=67108864
 one_GB=134217728
 two_GB=268435456
 three_GB=536870912
 four_GB=1073741824
 
-arr_sizes=( ${half_GB} )
+arr_sizes=( ${quarter_GB} )
 
 OPTIND=1
 optstr="haAcCs:rRdDzZnNgGt:p:P:i:b:B:I:k"
@@ -116,7 +117,7 @@ do
       should_archive=0
       ;;
     n)
-      arr_sizes=( 128 )
+      arr_sizes=( 256 )
       ;;
     N)
       ;;
