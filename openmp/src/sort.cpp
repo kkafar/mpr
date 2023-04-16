@@ -256,16 +256,16 @@ static void parse_args(const int argc, char *argv[], Args *out) {
   assert(((argc == 5 || argc == 6) && "Four or five arguments are expected"));
 
   out->arr_size = std::strtoull(argv[1], nullptr, 10);
-  assert((errno == 0 && "Correct conversion for arr_size"));
+  assert((errno == 0 && out->arr_size != 0 && "Correct conversion for arr_size"));
 
   out->n_threads = std::strtol(argv[2], nullptr, 10);
-  assert((errno == 0 && "Correct conversion for n_threads"));
+  assert((errno == 0 && out->n_threads != 0 && "Correct conversion for n_threads"));
 
   out->n_buckets = std::strtol(argv[3], nullptr, 10);
-  assert((errno == 0 && "Correct conversion for n_buckets"));
+  assert((errno == 0 && out->n_buckets != 0 && "Correct conversion for n_buckets"));
 
   out->n_series = std::strtol(argv[4], nullptr, 10);
-  assert((errno == 0 && "Correct conversion for n_series"));
+  assert((errno == 0 && out->n_series != 0 && "Correct conversion for n_series"));
 
   out->exp_type = ExpType::Async;
   if (argc == 6) {
