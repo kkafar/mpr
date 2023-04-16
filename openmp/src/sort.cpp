@@ -279,6 +279,8 @@ static void parse_args(const int argc, char *argv[], Args *out) {
       std::exit(EXIT_FAILURE);
     }
   }
+
+  assert((out->n_buckets >= out->n_threads && "n_buckets must be >= n_threads"));
 }
 
 static void dump_cfg() {
