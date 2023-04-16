@@ -120,7 +120,7 @@ ExpResult bucket_sort_sync(Data_t *data, const ExpCfg cfg) {
   return result;
 }
 
-ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
+static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
   LOG_DEBUG("bucket_sort_1 called with data: %p, size: %ld, n_buckets: %ld, n_threads: %d\n", data, cfg.args.arr_size, cfg.args.n_buckets, cfg.args.n_threads);
 
   uint16_t rstate[3];
