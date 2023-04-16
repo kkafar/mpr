@@ -1,4 +1,3 @@
-#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
@@ -124,7 +123,6 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
   LOG_DEBUG("bucket_sort_1 called with data: %p, size: %ld, n_buckets: %ld, n_threads: %d\n", data, cfg.args.arr_size, cfg.args.n_buckets, cfg.args.n_threads);
 
   uint16_t rstate[3];
-  double thread_range;
 
   ExpResult result{};
   result.cfg = cfg;
@@ -133,7 +131,7 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
 
   TIME_MEASURE_BEGIN(result.total_time);
 
-  #pragma omp parallel private(rstate, thread_range) shared(data, buckets, cfg)
+  #pragma omp parallel private(rstate) shared(data, buckets, cfg)
   {
     // threadprivate memory
     ExpResult p_result{};
@@ -148,16 +146,25 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
     TIME_MEASURE_END(p_result.draw_time);
     
     TIME_MEASURE_BEGIN(p_result.scatter_time);
-    thread_range = static_cast<double>(1.0) / static_cast<double>(cfg.args.n_threads);
 
+    BucketCount_t lower, upper, buckets_per_thread, remaining_buckets, used_remainder, bucket_for_data;
+    buckets_per_thread = cfg.args.n_buckets / cfg.args.n_threads;
+    remaining_buckets = cfg.args.n_buckets % cfg.args.n_threads;
+    used_remainder = std::min(static_cast<BucketCount_t>(tid), remaining_buckets);
+    lower = tid * buckets_per_thread + used_remainder;
+    upper = (tid + 1) * buckets_per_thread + used_remainder - (remaining_buckets <= tid);
+    
     // Every thread reads entire array (starting from the same index)
     // TODO: Reorganize so that threads do not read same indexes at the same time
     for (ArrSize_t i = 0; i < cfg.args.arr_size; ++i) {
-      if (data[i] >= tid * thread_range && data[i] < (tid + 1) * thread_range) {
-        buckets[(static_cast<int>(data[i] * cfg.args.n_buckets))].push_back(data[i]);
+      bucket_for_data = static_cast<int>(data[i] * cfg.args.n_buckets); 
+      if (bucket_for_data >= lower && bucket_for_data <= upper) {
+        buckets[bucket_for_data].push_back(data[i]);
       }
     }
     TIME_MEASURE_END(p_result.scatter_time);
+
+    // #pragma omp barrier
 
     TIME_MEASURE_BEGIN(p_result.sort_time);
     // Don't we need synchronization (barrier) here?
@@ -168,6 +175,7 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
     // before the worksharing construct.
     #pragma omp for schedule(static)
     for (BucketCount_t i = 0; i < cfg.args.n_buckets; ++i) {
+      // printf("Thread %d handles %ld\n", tid, i);
       std::sort(std::begin(buckets[i]), std::end(buckets[i])); 
     }
     TIME_MEASURE_END(p_result.sort_time);
@@ -224,6 +232,10 @@ int main(int argc, char * argv[]) {
   assert((data != nullptr && "Memory allocated"));
 
   if (g_args.n_threads != -1) {
+    if (omp_get_max_threads() < g_args.n_threads) {
+      LOG_ERROR("Demanded number of threads: %d is greater than available: %d\n", g_args.n_threads, omp_get_max_threads());
+      std::exit(EXIT_FAILURE);
+    }
     omp_set_dynamic(0); // disable dynamic teams
     omp_set_num_threads(g_args.n_threads); // set upper bounds for threads
   }
