@@ -58,12 +58,13 @@ exp_type="async"
 is_dry_run=0
 
 # number of doubles in...
+half_GB=67108864
 one_GB=134217728
 two_GB=268435456
 three_GB=536870912
 four_GB=1073741824
 
-arr_sizes=( ${one_GB} )
+arr_sizes=( ${half_GB} )
 
 OPTIND=1
 optstr="haAcCs:rRdDzZnNgGt:p:P:i:b:B:I:k"
