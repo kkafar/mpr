@@ -14,8 +14,7 @@ secondary_mark_style = '^'
 
 TIME_SCALE_FACTOR = 1e6
 
-
-plot_dir = path.Path('data', 'plots')
+plot_dir = path.Path('plots')
 if not plot_dir.is_dir():
     plot_dir.mkdir(parents=True, exist_ok=True)
 

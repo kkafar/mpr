@@ -10,7 +10,7 @@ smallmarksize=50
 primarymarkstyle='o'
 secondarymarkstyle='^'
 
-plotdir = path.Path('data', 'plots')
+plotdir = path.Path('plots')
 if not plotdir.is_dir():
     plotdir.mkdir(parents=True, exist_ok=True)
 
@@ -18,7 +18,7 @@ assert plotdir.is_dir(), "Plotdir exists"
 
 
 exctx='vcluster'
-datafile = path.Path('data-arch', 'vcluster-final-2023-04-04-10-10-55.csv')
+datafile = path.Path('data-arch', 'draw-exp', 'vcluster-final-2023-04-04-10-10-55.csv')
 # datafile = path.Path('data-arch', 'vcluster-final-2023-04-04-08-59-35.csv')
 # datafile = path.Path('data-arch', 'vcluster-final-2023-04-04-07-35-36.csv')
 
