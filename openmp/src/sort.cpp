@@ -147,6 +147,12 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
     
     TIME_MEASURE_BEGIN(p_result.scatter_time);
 
+    // I'm depending here on implementation of schedule(static). Basically this fragment of code
+    // mimics static scheduling, so that bucket-to-thread assigment in the for loop below is the same
+    // as in omp managed for loop with schedule(static).
+    // Such approach allows me to resign from synchornizing all threads on barrier before `sort` section,
+    // as it guarantees that if bucket `b` is being sorted all numbers that ought to be inside `b` are already
+    // in, because the thread that sorts the bucket was responsible for putting them inside the bucket.
     BucketCount_t lower, upper, buckets_per_thread, remaining_buckets, used_remainder, bucket_for_data;
     buckets_per_thread = cfg.args.n_buckets / cfg.args.n_threads;
     remaining_buckets = cfg.args.n_buckets % cfg.args.n_threads;
@@ -154,8 +160,7 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
     lower = tid * buckets_per_thread + used_remainder;
     upper = (tid + 1) * buckets_per_thread + used_remainder - (remaining_buckets <= tid);
     
-    // Every thread reads entire array (starting from the same index)
-    // TODO: Reorganize so that threads do not read same indexes at the same time
+    
     for (ArrSize_t i = 0; i < cfg.args.arr_size; ++i) {
       bucket_for_data = static_cast<int>(data[i] * cfg.args.n_buckets); 
       if (bucket_for_data >= lower && bucket_for_data <= upper) {
@@ -167,12 +172,6 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
     // #pragma omp barrier
 
     TIME_MEASURE_BEGIN(p_result.sort_time);
-    // Don't we need synchronization (barrier) here?
-    // What happens if one thread is assigned a bucket which is still
-    // being filled in earlier for? Documentation states that:
-    // "There is a default barrier at the end of each worksharing construct unless
-    // the `nowait` clause is present.", but I have not found anything on synchronization
-    // before the worksharing construct.
     #pragma omp for schedule(static)
     for (BucketCount_t i = 0; i < cfg.args.n_buckets; ++i) {
       // printf("Thread %d handles %ld\n", tid, i);
