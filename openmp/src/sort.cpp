@@ -296,6 +296,7 @@ static void parse_args(const int argc, char *argv[], Args *out) {
   }
 
   assert((out->n_buckets >= out->n_threads && "n_buckets must be >= n_threads"));
+  assert((out->arr_size >= out->n_threads && "arr_size must be >= n_threads"));
 }
 
 static void dump_cfg() {
