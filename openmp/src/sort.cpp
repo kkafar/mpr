@@ -161,15 +161,15 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
     
     ArrSize_t thread_offset = tid * (cfg.args.arr_size / cfg.args.n_threads);
     for (ArrSize_t i = thread_offset; i < cfg.args.arr_size; ++i) {
-      bucket_for_data = static_cast<int>(data[i + thread_offset] * cfg.args.n_buckets);
+      bucket_for_data = static_cast<int>(data[i] * cfg.args.n_buckets);
       if (bucket_for_data >= lower && bucket_for_data <= upper) {
-        buckets[bucket_for_data].push_back(data[i + thread_offset]);
+        buckets[bucket_for_data].push_back(data[i]);
       }
     }
     for (ArrSize_t i = 0; i < thread_offset; ++i) {
-      bucket_for_data = static_cast<int>(data[i + thread_offset] * cfg.args.n_buckets);
+      bucket_for_data = static_cast<int>(data[i] * cfg.args.n_buckets);
       if (bucket_for_data >= lower && bucket_for_data <= upper) {
-        buckets[bucket_for_data].push_back(data[i + thread_offset]);
+        buckets[bucket_for_data].push_back(data[i]);
       }
     }
     TIME_MEASURE_END(p_result.scatter_time);
