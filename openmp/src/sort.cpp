@@ -187,6 +187,7 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
     // These are threadprivate, so initialization value holds for every thread
     ArrSize_t prev_el_count = 0;
     BucketCount_t last_j = 0;
+    ArrSize_t el_i;
     
     #pragma omp for schedule(static)
     for (BucketCount_t i = 0; i < cfg.args.n_buckets; ++i) {
@@ -201,7 +202,7 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
         prev_el_count += buckets[j].size();
       }
       last_j = i;
-      ArrSize_t el_i = prev_el_count;
+      el_i = prev_el_count;
       for (Data_t el : buckets[i]) {
         data[el_i++] = el;
       }
