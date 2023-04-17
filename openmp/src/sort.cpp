@@ -84,7 +84,7 @@ static bool summary(Data_t *data, const Args &args);
 // Assumes that rstate consists of 3 * 16 bytes.
 inline static int32_t init_rand_state(uint16_t *rstate);
 
-ExpResult bucket_sort_sync(Data_t *data, const ExpCfg cfg) {
+static ExpResult bucket_sort_sync(Data_t *data, const ExpCfg cfg) {
   ExpResult result;
   result.cfg = cfg;
 
@@ -130,7 +130,6 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
   std::vector<std::vector<Data_t>> buckets(cfg.args.n_buckets);
 
   TIME_MEASURE_BEGIN(result.total_time);
-
   #pragma omp parallel private(rstate) shared(data, buckets, cfg)
   {
     // threadprivate memory
@@ -160,11 +159,17 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
     lower = tid * buckets_per_thread + used_remainder;
     upper = (tid + 1) * buckets_per_thread + used_remainder - (remaining_buckets <= tid);
     
-    
-    for (ArrSize_t i = 0; i < cfg.args.arr_size; ++i) {
-      bucket_for_data = static_cast<int>(data[i] * cfg.args.n_buckets); 
+    ArrSize_t thread_offset = tid * (cfg.args.arr_size / cfg.args.n_threads);
+    for (ArrSize_t i = thread_offset; i < cfg.args.arr_size; ++i) {
+      bucket_for_data = static_cast<int>(data[i + thread_offset] * cfg.args.n_buckets);
       if (bucket_for_data >= lower && bucket_for_data <= upper) {
-        buckets[bucket_for_data].push_back(data[i]);
+        buckets[bucket_for_data].push_back(data[i + thread_offset]);
+      }
+    }
+    for (ArrSize_t i = 0; i < thread_offset; ++i) {
+      bucket_for_data = static_cast<int>(data[i + thread_offset] * cfg.args.n_buckets);
+      if (bucket_for_data >= lower && bucket_for_data <= upper) {
+        buckets[bucket_for_data].push_back(data[i + thread_offset]);
       }
     }
     TIME_MEASURE_END(p_result.scatter_time);
@@ -174,7 +179,6 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
     TIME_MEASURE_BEGIN(p_result.sort_time);
     #pragma omp for schedule(static)
     for (BucketCount_t i = 0; i < cfg.args.n_buckets; ++i) {
-      // printf("Thread %d handles %ld\n", tid, i);
       std::sort(std::begin(buckets[i]), std::end(buckets[i])); 
     }
     TIME_MEASURE_END(p_result.sort_time);
