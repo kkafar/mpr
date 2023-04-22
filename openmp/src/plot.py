@@ -33,7 +33,7 @@ if len(sys.argv) == 1:
     processs_seq_exp(data_files["seq"], plot_dir)
     process_par_exp(data_files["par"], plot_dir)
 
-if len(sys.argv) == 2:  # path to datafile is expected, we assume parallel experiment
+if len(sys.argv) == 2:  # path to datafile is expected, expname is resolved based on filename
     data_file = path.Path(sys.argv[1])
     assert data_file.is_file(), "Data file exists"
 
