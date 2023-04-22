@@ -2,7 +2,7 @@ import pathlib as path
 import matplotlib.pyplot as plt
 import sys
 from plots.par import process_par_exp
-from plots.seq import processs_seq_exp
+from plots.seq import process_seq_exp
 from plots.prng import process_prng_exp
 
 
@@ -33,7 +33,7 @@ if len(sys.argv) == 1:
     assert data_files["seq"].is_file(), "Seq data file exists"
     assert data_files["par"].is_file(), "Par data file exists"
 
-    processs_seq_exp(data_files["seq"], plot_dir)
+    process_seq_exp(data_files["seq"], plot_dir)
     process_par_exp(data_files["par"], plot_dir)
 
 if len(sys.argv) == 2:
@@ -47,8 +47,10 @@ if len(sys.argv) == 2:
 
             if expname == "par":
                 process_par_exp(data_file, plot_dir)
+            elif expname == "seq":
+                process_seq_exp(data_file, plot_dir)
             else:
-                processs_seq_exp(data_file, plot_dir)
+                process_prng_exp(data_file, plot_dir)
     else:
         data_file = path.Path(sys.argv[1])
         assert data_file.is_file(), "Data file exists"
@@ -58,8 +60,10 @@ if len(sys.argv) == 2:
 
         if expname == "par":
             process_par_exp(data_file, plot_dir)
+        elif expname == "seq":
+            process_seq_exp(data_file, plot_dir)
         else:
-            processs_seq_exp(data_file, plot_dir)
+            process_prng_exp(data_file, plot_dir)
 
 if len(sys.argv) == 3:  # exptype, datafile
     expname = sys.argv[1]
@@ -71,7 +75,7 @@ if len(sys.argv) == 3:  # exptype, datafile
     if expname == "par":
         process_par_exp(data_file, plot_dir)
     elif expname == "seq":
-        processs_seq_exp(data_file, plot_dir)
+        process_seq_exp(data_file, plot_dir)
     else:
         process_prng_exp(data_file, plot_dir)
 

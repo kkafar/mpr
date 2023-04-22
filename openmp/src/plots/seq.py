@@ -5,7 +5,7 @@ from .commons import TIME_SCALE_FACTOR, PRIMARY_MAKR_STYLE
 from .commons import resolve_date_from_path
 
 
-def processs_seq_exp(data_path: path.Path, plot_dir: path.Path):
+def process_seq_exp(data_path: path.Path, plot_dir: path.Path):
     print(f'process_seq_exp: {data_path}, {plot_dir}', end=' ')
     data_file_date = resolve_date_from_path(data_path)
     print(f'resolved date: {data_file_date}')
