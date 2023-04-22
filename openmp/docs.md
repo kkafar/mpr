@@ -13,6 +13,28 @@ Author: Kacper Kafara
 Autor: Kacper Kafara\
 Grupa: wtorek 15:00
 
+# Spis treści
+
+- [Metody Programowania Równoległego - MPI](#metody-programowania-równoległego---mpi)
+- [Spis treści](#spis-treści)
+- [Zadanie 1](#zadanie-1)
+- [Wyniki](#wyniki)
+- [Wnioski](#wnioski)
+- [Zadanie 2 - sortowanie kubełkowe (wersja 1)](#zadanie-2---sortowanie-kubełkowe-wersja-1)
+	- [Implementowany algorytm](#implementowany-algorytm)
+		- [Analiza złożoności](#analiza-złożoności)
+	- [Środowisko i kompilacja](#środowisko-i-kompilacja)
+	- [Szczegóły implementacji](#szczegóły-implementacji)
+		- [Założenia](#założenia)
+		- [Struktury danych](#struktury-danych)
+		- [Pomiar czasu](#pomiar-czasu)
+		- [PRNG](#prng)
+		- [Zrównoleglanie pętli `for`](#zrównoleglanie-pętli-for)
+		- [Uniknięcie potrzeby synchronizacji](#uniknięcie-potrzeby-synchronizacji)
+		- [Usprawnienie fazy `gather`](#usprawnienie-fazy-gather)
+	- [Wyniki eksperymentów](#wyniki-eksperymentów)
+- [Kod źródłowy](#kod-źródłowy)
+
 # Zadanie 1
 
 Celem zadania był pomiar czasu i przyśpieszenia wykonania programu wypełniającego
@@ -95,8 +117,7 @@ Cele zadania:
 2. Przeprowadznienie pomiarów i znalezienie optymalnego rozmiaru kubełka (dającego najmniejszy czas wykonania, przy stałym rozmiarze zadania)
 3. Implementacja algorytmu równoległego sortowania kubełkowego (wersja 1)
 4. Przeprowadzanie pomiarów czasu i przyśpieszenia w zależności od liczby wątków (rozmiar tablicy i kubełka stały)
-
-# Wybrane aspekty realizacji
+5. Porównanie swojej wersji algorytmu z inną, zaimplementowaną przez członka zespołu
 
 ## Implementowany algorytm
 
@@ -107,6 +128,21 @@ Implementowany był wariant 1:
 * Każdy z wątków przydziela tylko te liczby, które powinny znaleźć się w przypisanym mu kubełku (faza `scatter`)
 * Wątki dzielą się kubełkami do sortowania (każdy sortuje swoje) (faza `sort`)
 * Wątki dzielą się kubełkami do przepisania do tablicy wyjściowej (każdy przepisuje swoje) (faza `gather`)
+
+### Analiza złożoności
+
+Przyjmijmy onaczenia: $n$ - liczba elementów do posortowania, $p$ - liczba wątków, $b$ - liczba kubełków.
+
+Przeanalizujmy najpierw złożoność algorytmu sekwencyjnego w modelu RAM.
+
+## Środowisko i kompilacja
+
+Wszystkie pomiary / eksperymenty przeprowadzone zostały na komputerze "Ares" (pojedynczy węzeł: `	48 cores, Intel(R) Xeon(R) Platinum 8268 CPU @ 2.90GHz`, `3,85 GB RAM`).
+Ze względu na [szczegóły implementacyjne](#uniknięcie-potrzeby-synchronizacji) kod programu sortującego
+(napisanego w `C++`) kompilowany był z użyciem `gcc 10.3.0` z flagami `-std=c++11 -fopenmp -O2`.
+
+Wersja `gcc` była podyktowana faktem, że w kodzie korzystam z szczegółu implementacyjnego `OpenMP` i lokalnie,
+gdzie program był testowany przed przeprowadzaniem właściwych eksperymentów, korzystam właśnie z `gcc 10.3.0`.
 
 ## Szczegóły implementacji
 
@@ -143,9 +179,10 @@ jest to część stała, nic nie wnosząca do badanej charakterystyki algorytmu 
 sekwencyjna algorytmu (alokacja kubełków), mająca duży wpływ na ostateczne wartości przyśpieszenia, jednak nie zalicza się ona do żadnej z badanych faz,
 dlatego wykluczyłem ją z analizy.
 
-## PRNG
+### PRNG
 
-Wykorzystano `erand48` (TODO: Puścić obliczenia dla jakiegoś mersene twister (albo znaleźć coś lepszego, bo ten jest kongruencyjny))
+Wykorzystano `erand48`, który jest generatorem kongruencyjnym (nie jest to podejście które daje najlepsze rezultaty) dającym
+docelowo rozkład jednostajny.
 
 
 ### Zrównoleglanie pętli `for`
@@ -180,7 +217,7 @@ Zastosowałem prostą optymalizację korzystającą z faktu, że wątek zliczaj�
 iterować przez wszystkie te kubełki dla każdego analizowanego przez siebie kubełka. Wystarczy, że zrobi to raz, dla pierwszego przepisywanego
 przez siebie kubełka i zapamięta wartość.
 
-# Wyniki
+## Wyniki eksperymentów
 
 ![seq](src/plots/seq-256.png)
 ![par-time](src/plots/par-time-256-500.png)
