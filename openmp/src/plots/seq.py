@@ -33,7 +33,7 @@ def processs_seq_exp(data_path: path.Path, plot_dir: path.Path):
                   marker=PRIMARY_MAKR_STYLE, linestyle=':', label='Średnia')
 
     plot.set(
-        title="Czas wykonania alg. sekwencyjnego a rozmiar kubełków, dane: 256MB",
+        title="Czas wykonania alg. sekwencyjnego a rozmiar kubełków, dane: 256MB ~ 33e6 elem.",
         xlabel="Rozmiar kubełka",
         ylabel="Czas wykonania [s]")
     plot.grid()

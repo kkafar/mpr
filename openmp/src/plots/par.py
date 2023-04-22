@@ -8,7 +8,7 @@ from .config import COL_NAMES, TIME_SCALE_FACTOR, PRIMARY_MAKR_STYLE, SECONDARY_
 def process_par_exp(data_path: path.Path, plot_dir: path.Path):
     data_df = (
         pl.scan_csv(data_path, has_header=True)
-        .drop(['arrsize', 'bsize'])
+        .drop(['arrsize'])
         .select([pl.col(col_name) / TIME_SCALE_FACTOR for col_name in COL_NAMES] + [pl.exclude(COL_NAMES)])
         .sort(['nthreads', 'sid'])
         .groupby(['nthreads'])
@@ -21,6 +21,7 @@ def process_par_exp(data_path: path.Path, plot_dir: path.Path):
     y_data = data_df.get_column('total_mean')
     total_mean_0 = y_data.head(1)
     y_expected_1 = [total_mean_0 / t for t in x_data]
+    bucket_size = data_df.get_column('bsize').head(1)
 
     fig_par, plot_par = plt.subplots(nrows=1, ncols=1)
 
@@ -33,13 +34,13 @@ def process_par_exp(data_path: path.Path, plot_dir: path.Path):
                           marker=SECONDARY_MARK_STYLE, linestyle=':', label=f'{col_name}')
 
     plot_par.set(
-        title="Dane: 256MB, kubełek: 500",
+        title=f"Dane: 256MB ~ 33e6 elem., kubełek: {bucket_size}",
         xlabel="Liczba wątków",
         ylabel="Czas wykonania [s]")
     plot_par.grid()
     plot_par.legend()
     fig_par.tight_layout()
-    fig_par.savefig(plot_dir.joinpath('par-time-256-500.png'))
+    fig_par.savefig(plot_dir.joinpath(f'par-time-256-{bucket_size}.png'))
 
     fig_bar, plot_bar = plt.subplots(nrows=1, ncols=1)
 
@@ -50,13 +51,13 @@ def process_par_exp(data_path: path.Path, plot_dir: path.Path):
         y_offset = y_offset + data_series
 
     plot_bar.set(
-        title="Dane: 256MB, kubełek: 500",
+        title=f"Dane: 256MB ~ 33e6 elem., kubełek: {bucket_size}",
         xlabel="Liczba wątków",
         ylabel="Czas wykonania [s]")
     plot_bar.grid()
     plot_bar.legend()
     fig_bar.tight_layout()
-    fig_bar.savefig(plot_dir.joinpath('par-bar-time-256-500.png'))
+    fig_bar.savefig(plot_dir.joinpath(f'par-bar-time-256-{bucket_size}.png'))
 
     fig_sp, plot_sp = plt.subplots(nrows=1, ncols=1)
 
@@ -71,13 +72,12 @@ def process_par_exp(data_path: path.Path, plot_dir: path.Path):
         plot_sp.plot(x_data, data_series.head(1) / data_series, marker=SECONDARY_MARK_STYLE,
                      linestyle=':', label=f'{col_name}')
 
-
     plot_sp.set(
-        title="Dane: 256MB, kubełek: 500",
+        title=f"Dane: 256MB ~ 33e6 elem., kubełek: {bucket_size}",
         xlabel="Liczba wątków",
         ylabel="Przyśpieszenie")
     plot_sp.grid()
     plot_sp.legend()
     fig_sp.tight_layout()
-    fig_sp.savefig(plot_dir.joinpath('par-sp-256-500.png'))
+    fig_sp.savefig(plot_dir.joinpath(f'par-sp-256-{bucket_size}.png'))
 
