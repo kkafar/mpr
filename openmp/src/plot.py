@@ -33,17 +33,30 @@ if len(sys.argv) == 1:
     processs_seq_exp(data_files["seq"], plot_dir)
     process_par_exp(data_files["par"], plot_dir)
 
-if len(sys.argv) == 2:  # path to datafile is expected, expname is resolved based on filename
-    data_file = path.Path(sys.argv[1])
-    assert data_file.is_file(), "Data file exists"
+if len(sys.argv) == 2:
+    # path to datafile is expected, expname is resolved based on filename
+    # or if the arg == "all" -- all datafiles are plotted
 
-    expname = deduce_expname_from_filename(data_file.name)
-    assert expname == "par" or expname == "seq", "Correct exp name"
+    if sys.argv[1] == "all":
+        for data_file in data_dir.glob('*.csv'):
+            expname = deduce_expname_from_filename(data_file.name)
+            assert expname == "par" or expname == "seq", "Correct exp name"
 
-    if expname == "par":
-        process_par_exp(data_file, plot_dir)
+            if expname == "par":
+                process_par_exp(data_file, plot_dir)
+            else:
+                processs_seq_exp(data_file, plot_dir)
     else:
-        processs_seq_exp(data_file, plot_dir)
+        data_file = path.Path(sys.argv[1])
+        assert data_file.is_file(), "Data file exists"
+
+        expname = deduce_expname_from_filename(data_file.name)
+        assert expname == "par" or expname == "seq", "Correct exp name"
+
+        if expname == "par":
+            process_par_exp(data_file, plot_dir)
+        else:
+            processs_seq_exp(data_file, plot_dir)
 
 if len(sys.argv) == 3:  # exptype, datafile
     expname = sys.argv[1]
