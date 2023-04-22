@@ -1,4 +1,4 @@
-.PHONY: all clean release
+.PHONY: all clean release prng
 .DEFAULT: all
 
 all: release
@@ -10,5 +10,8 @@ debug: sort.cpp
 	g++ -fopenmp -ggdb -std=c++11 -DDEBUG -o sort sort.cpp
 
 clean:
-	rm -fr sort
+	rm -fr sort main prng
+
+prng:
+	g++ -std=c++17 -O2 -o prng prng.cpp
 

@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import sys
 from plots.par import process_par_exp
 from plots.seq import processs_seq_exp
+from plots.prng import process_prng_exp
 
 
 def deduce_expname_from_filename(filename: str) -> str:
@@ -11,6 +12,8 @@ def deduce_expname_from_filename(filename: str) -> str:
         return "par"
     elif expname == "sync":
         return "seq"
+    elif expname == "prng":
+        return "prng"
     else:
         return "unknown"
 
@@ -40,7 +43,7 @@ if len(sys.argv) == 2:
     if sys.argv[1] == "all":
         for data_file in data_dir.glob('*.csv'):
             expname = deduce_expname_from_filename(data_file.name)
-            assert expname == "par" or expname == "seq", "Correct exp name"
+            assert expname == "par" or expname == "seq" or expname == "prng", "Correct exp name"
 
             if expname == "par":
                 process_par_exp(data_file, plot_dir)
@@ -51,7 +54,7 @@ if len(sys.argv) == 2:
         assert data_file.is_file(), "Data file exists"
 
         expname = deduce_expname_from_filename(data_file.name)
-        assert expname == "par" or expname == "seq", "Correct exp name"
+        assert expname == "par" or expname == "seq" or expname == "prng", "Correct exp name"
 
         if expname == "par":
             process_par_exp(data_file, plot_dir)
@@ -60,15 +63,17 @@ if len(sys.argv) == 2:
 
 if len(sys.argv) == 3:  # exptype, datafile
     expname = sys.argv[1]
-    assert expname == "par" or expname == "seq", "Correct exp name"
+    assert expname == "par" or expname == "seq" or expname == "prng", "Correct exp name"
 
     data_file = path.Path(sys.argv[2])
     assert data_file.is_file(), "Data file exists"
 
     if expname == "par":
         process_par_exp(data_file, plot_dir)
-    else:
+    elif expname == "seq":
         processs_seq_exp(data_file, plot_dir)
+    else:
+        process_prng_exp(data_file, plot_dir)
 
 plt.show()
 
