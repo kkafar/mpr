@@ -41,3 +41,5 @@ def processs_seq_exp(data_path: path.Path, plot_dir: path.Path):
     fig.tight_layout()
     fig.savefig(plot_dir.joinpath('seq-256.png'))
 
+    print(data_df.sort('total_mean').head(10))
+
