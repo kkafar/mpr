@@ -30,6 +30,7 @@ Grupa: wtorek 15:00
 		- [Pomiar czasu](#pomiar-czasu)
 		- [PRNG](#prng)
 		- [Zrównoleglanie pętli `for`](#zrównoleglanie-pętli-for)
+		- [Unikanie równoczesnych odczytów tych samych rejonów pamięci](#unikanie-równoczesnych-odczytów-tych-samych-rejonów-pamięci)
 		- [Uniknięcie potrzeby synchronizacji](#uniknięcie-potrzeby-synchronizacji)
 		- [Usprawnienie fazy `gather`](#usprawnienie-fazy-gather)
 	- [Wyniki eksperymentów](#wyniki-eksperymentów)
@@ -149,7 +150,6 @@ gdzie program był testowany przed przeprowadzaniem właściwych eksperymentów,
 
 * Wszystkie wynikowe punkty pomiarowe są średnią z 10 pomiarów.
 
-
 ## Szczegóły implementacji
 
 ### Założenia
@@ -161,6 +161,8 @@ Zaimplementowany algorytm zakłada:
 
 Brak powyższych założeń wprowadzałby niepotrzebne komplikacje do kodu, który musiałby w specjalny
 sposób obsługiwać te przypadki.
+
+Powyższe założenia są weryfikowane w czasie działania programu.
 
 ### Struktury danych
 
@@ -185,6 +187,8 @@ jest to część stała, nic nie wnosząca do badanej charakterystyki algorytmu 
 sekwencyjna algorytmu (alokacja kubełków), mająca duży wpływ na ostateczne wartości przyśpieszenia, jednak nie zalicza się ona do żadnej z badanych faz,
 dlatego wykluczyłem ją z analizy.
 
+Również istotny jest fakt, że wynikami są pomiary dla wątku 0, inne dane są odrzucane.
+
 ### PRNG
 
 Wykorzystano `erand48`, który jest generatorem kongruencyjnym (nie jest to podejście które daje najlepsze rezultaty) dającym
@@ -195,7 +199,7 @@ Wynik tego eksperymentu przedstawiam na poniższym wykresie.
 
 | ![prng plot](src/plots/sort/prng-distribution-16777216-32.png) |
 |:--:|
-| *Rozkład generatora `erand48`* |
+| *Wykres 2.1 Rozkład generatora `erand48`* |
 
 Widzimy na powyższym wykresie, że przy przy dużej liczbie elementów w tablicy generator faktycznie daje próbki z rozkładu jednostajnego. Charakterystyka ta nie jest zachowana,
 jeżeli przeprowadzimy obliczenia dla małej liczby elementów, rzędu 100-1000. Nie stanowi to jednak problemu, gdyż wszystkie eksperymenty były przeprowadzane na znacznie
@@ -205,6 +209,11 @@ większej liczbie elementów (ok. 33 mln.).
 ### Zrównoleglanie pętli `for`
 
 Zgodnie z wynikami Zadania 1, do zrównoleglania pętli `for` wykorzystałem klauzulę `schedule(static)`, która dawała najlepsze rezultaty.
+
+### Unikanie równoczesnych odczytów tych samych rejonów pamięci
+
+Implementacja fazy `scatter` zapewnia, że każdy z wątków zaczyna przeszukiwać tablicę w poszukiwaniu "swoich" liczb od innego indeksu, próbując w ten sposób
+minimalizować synchornizację sprzętową w dostępie do tych samych rejonów pamięci.
 
 ### Uniknięcie potrzeby synchronizacji
 
@@ -240,7 +249,7 @@ przez siebie kubełka i zapamięta wartość.
 
 | ![seq](src/plots/sort/seq-256-external.png) |
 |:--:|
-| *Czas wykonania algorytmu sekwencyjnego a rozmiar kubełka, argmin: 409* |
+| *Wykres 2.2 Czas wykonania algorytmu sekwencyjnego a rozmiar kubełka, argmin: 409* |
 
 
 Na powyższym wykresie został przedstawiony czas wykonania algorytmu sekwencyjnego w zależności od rozmiaru kubełka. Są to wyniki pomiarów uzyskane przez jednego z członków mojego zespołu.
@@ -250,13 +259,13 @@ Przedstawiam je poniżej:
 
 | ![bad-seq](src/plots/sort/seq-256-2023-04-19-15-00-00.png) |
 |:--:|
-| *Czas wykonania algorytmu sekwencyjnego a rozmiar kubełka (moje pomiary), argmin: 3976* |
+| *Wykres 2.3 Czas wykonania algorytmu sekwencyjnego a rozmiar kubełka (moje pomiary), argmin: 3976* |
 
 
 Jedyne różnica to obecność flagi `-O2` przy kompilacji (która powinna raczej suprawnić pracę algorytmu). Takie sytuacje zdażają się jeszcze w kilku miejscach (jednakowy kod daje różne rezultaty w zależności od tego kto mierzy...) -- np. przy skalowaniu sortowania, o czym niżej.
 Naturalnym wnioskiem jest to, że słabo kontrolujemy środowisko eksperymentu, tzn. są jakieś zmienne których nie bierzemy pod uwagę i to one wpływają na różnice w wynikach -- brak sugestii.
 
-Wobec powyższego zdecydowaliśmy w grupie, że będziemy przeprowadzać obliczenia dla rozmiaru kubełka 500 i 409, a ja we własnym zakresie przeprowadziłem jeszcze pomiary dla swojego minimum: 3976.
+Wobec powyższego zdecydowaliśmy w grupie, że będziemy przeprowadzać obliczenia dla rozmiaru kubełka 500 i 409, a ja we własnym zakresie przeprowadziłem jeszcze pomiary dla swojego minimum: 3976 (wyniki były jednak znacznie gorsze, dlatego dalej nie prezentuję wykresów dla tego rozmiaru kubełka).
 
 Wyniki znajdują sie na kolejnych wykresach.
 
@@ -265,7 +274,7 @@ Wyniki znajdują sie na kolejnych wykresach.
 
 | ![par-time](src/plots/sort/par-time-256-409-2023-04-23-10-47-57.png) |
 |:--:|
-| *Czas wykonania algorytmu równoległego a liczba wątków* |
+| *Wykres 2.4 Czas wykonania algorytmu równoległego a liczba wątków* |
 
 Na powyższym wykresie czasu wykonania algorytmu równoległego w zależności od liczby wątków widzimy, że ogólna charakterystyka wykresu jest zgodna z oczekiwaniami teoretycznymi (zachowanie jak $1/x$), jednak ogólna
 wydajność (niebieska linia) jest niższa od idealnej (pomarańczowa, przerywana linia). Powody tego są lepiej widoczne na kolejnych wykresach.
@@ -273,13 +282,13 @@ wydajność (niebieska linia) jest niższa od idealnej (pomarańczowa, przerywan
 
 | ![par-bar-time](src/plots/sort/par-bar-time-256-409-2023-04-23-10-47-57.png) |
 |:--:|
-| *Czas wykonania algorytmu równoległego a liczba wątków, zestawienie poszczególnych faz* |
+| *Wykres 2.5 Czas wykonania algorytmu równoległego a liczba wątków, zestawienie poszczególnych faz* |
 
 
 
 | ![par-sp](src/plots/sort/par-sp-256-409-2023-04-23-10-47-57.png) |
 |:--:|
-| *Przyśpieszenie algorytmu równoległego a liczba wątków, wraz z przyśpieszeniem poszczególnych faz* |
+| *Wykres 2.6 Przyśpieszenie algorytmu równoległego a liczba wątków, wraz z przyśpieszeniem poszczególnych faz* |
 
 Z powyższych wykresów widzimy, że fazy `draw` i `scatter` skalują się bardzo dobrze, natomiast `sort` i `gather` znacznie gorzej (są wąskim gardłem algorytmu).
 
@@ -292,40 +301,61 @@ w celu zliczenia ich rozmiarów (a kubełków potencjalnie może być dużo, u m
 
 Po przeprowadzeniu dodatkowych eksperymentów okazało się, że kluczowa jest tutaj kompilacja z flagą `-O2`! Oto wykresy czasu i przyśpieszenia algorytmu równoległego uzyskanego dla programu skompilowanego bez tej flagi:
 
-| ![par-time](src/plots/sort/par-time-256-409-2023-04-23-12-36-08.png) |
+
+| ![par-sp-no-o2](src/plots/sort/par-sp-256-409-2023-04-23-12-36-08.png) |
 |:--:|
-| *Czas wykonania algorytmu równoległego a liczba wątków (program skompilowany bez `-O2`)* |
+| *Wykres 2.7 Przyśpieszenie algorytmu równoległego skompilowanego bez `-O2`* |
 
 
 
-| ![par-bar-time](src/plots/sort/par-bar-time-256-409-2023-04-23-12-36-08.png) |
+| ![cmp-o2-time](src/plots/sort/cmp-time-409-2023-04-23-10-47-57-2023-04-23-12-36-08.png)
 |:--:|
-| *Czas wykonania algorytmu równoległego a liczba wątków, zestawienie poszczególnych faz (program skompilowany bez `-O2`)* |
+| *Wykres 2.8 Czas wykonania algorytmu równoległego a liczba wątków (program skompilowany z i bez `-O2`)* |
 
 
 
-| ![par-sp](src/plots/sort/par-sp-256-409-2023-04-23-12-36-08.png) |
+| ![cmp-o2-sp](src/plots/sort/cmp-sp-409-2023-04-23-10-47-57-2023-04-23-12-36-08.png) |
 |:--:|
-| *Przyśpieszenie algorytmu równoległego a liczba wątków, wraz z przyśpieszeniem poszczególnych faz (program skompilowany bez `-O2`)* |
-
+| *Wykres 2.9 Przyśpieszenie równoległego a liczba wątków, zestawienie poszczególnych faz (program skompilowany z i bez `-O2`)* |
 
 Proszę zauważyć, że:
 
 1. Ogólne czasy wykonania algorymu wzrosły (1.5x - 2x krotnie)
 2. Nie ma już superskalowania dla fazy `scatter`
 3. Faza `gather` skaluje się w końcu zgodnie z oczekiwaniami!
+4. Algorytm skompilowany z flagą `-O2` zyskuje szczególnie w fazach `scatter` i `gather`.
 
 Wnioskuję z tego następujące fakty:
 
 1. Superskalowanie w fazie `scatter` wynikało z optymalizacji dokonanych przez kompiltor, przypuszczalnie w organizacji tego jakie dane znajdują się w jakim momencie w pamięci cache aplikacji -- dzięki czemu
 	wątki wykonywały znacznie mniej odczytów z pamięci RAM.
 2. Faza `gather` mogła zostać przypuszczalnie **znacznie** zoptymalizowana i zredukowana do pojedynczych wowołań `std::memcpy` - kopiującej przy jednym wywołaniu całe regiony pamięci, a nie tak jak jest to zapisane w algorytmie: element po elemencie.
+   W takim wypadku pozostaje tam bardzo mało do skalowania (pracy do rozbijania pomiędzy wątki) (wraz ze wzrostem liczby kubełków zwiększa się tylko liczba potrzebnych wywołań). Zwracam uwagę także na to, że bez flagi `-O2` faza `gather` przyśpiesza lepiej
+	 (zgodnie z oczekiwaniami) ale pomimo przyśpieszenia ciągle działa wolniej niż w programie skompilowanym z tą opcją.
 
 ### Porównanie z algorytmem w wersji 2
 
+Autorem drugiej implementacji jest Adam Niemiec. Jest ona pochodną implementacji algorytmu 1 i korzysta z takich samych typów i struktur danych, tak samo mierzony jest czas itd.
+
+Jako, że wyniki dla algorytmu drugiego zostały pozyskane dla programu skompilowanego bez flagi `-O2` to też z taką wersją swoich wyników go porównuję.
+
+| ![cmp-ext-time](src/plots/sort/cmp-time-409-2023-04-23-12-36-08-external.png)
+|:--:|
+| *Wykres 2.10 Porównanie czsau wykonania algorytmów w wersjach 1 i 2 (zgodnie z oznaczeniami z UPEL)*|
 
 
+| ![cmp-ext-sp](src/plots/sort/cmp-sp-409-2023-04-23-12-36-08-external.png)
+|:--:|
+| *Wykres 2.11 Porównanie przyśpieszenia algorytmów w wersjach 1 i 2 (zgodnie z oznaczeniami z UPEL)* |
 
+
+Na podstawie wykresu 2.10 widzimy, że w ogólności implementacja algorytmu 1 jest znacznie szybsza (1.2x-2x) od implementacji algorytmu 2. Na części wykresu 2.10 poświęconej poszczególnym fazom, możemy zauważyć, że miejscem gdzie
+algorytm 1 uzyskuje przewagę jest faza `scatter`. Faktycznie, implementacja algorytmu 2 tylko tam się różni -- w odróżnieniu od algorytmu 1, gdzie każdy wątek wpisuje liczby tylko do przypisanych sobie kubełków, tutaj każdy wątek może potencjalnie
+wpisywać do każdego z kubełków z czego wynika potrzeba synchronizacji. Najprawdopodobniej to właśnie synchronizacja jest powodem słabsezj wydajności algorytmu 2 w tej fazie. Obserwujemy także, że w faze `sort` algorytm 1 radzi sobie lepiej (do 8 wątków, potem różnica mieści się w błędzie pomiarowym).
+Jest to trudne do wytłumaczenia, jako, że implementacja tej fazy w obu algorytmach jest dokładnie taka sama. Pozostałe dwie fazy `draw` i `gather` dają właściwie jednakowe wyniki (ich implementacja też jest jednakowa).
+
+Na wykresie przyśpieszenia 2.11 obserwujemy że algorytm drugi ma je średnio większe. Jest to głównie konsekwencja fazy `sort`, która prezentuje lepsze przyśpieszenie dla algorytmu 2., jednak trzeba tutaj zaznaczyć, że to w algorytmie 1 we wszystkich punktach pomiarowych
+osiągnięty czas jest lepszy.
 
 # Kod źródłowy
 
