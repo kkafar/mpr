@@ -85,7 +85,7 @@ static bool summary(Data_t *data, const Args &args);
 inline static int32_t init_rand_state(uint16_t *rstate);
 
 inline static int qsort_cmp(const void *x, const void *y) {
-  return (*static_cast<const Data_t *>(x) - *static_cast<const Data_t *>(y));
+  return (*static_cast<const Data_t *>(x) - *static_cast<const Data_t *>(y)) < 0 ? -1 : 1;
 }
 
 static ExpResult bucket_sort_sync(Data_t *data, const ExpCfg cfg) {
