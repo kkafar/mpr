@@ -33,6 +33,9 @@ Grupa: wtorek 15:00
 		- [Uniknięcie potrzeby synchronizacji](#uniknięcie-potrzeby-synchronizacji)
 		- [Usprawnienie fazy `gather`](#usprawnienie-fazy-gather)
 	- [Wyniki eksperymentów](#wyniki-eksperymentów)
+		- [Czas wykonania algorytmu sekwencyjnego a oczekiwany rozmiar kubełka](#czas-wykonania-algorytmu-sekwencyjnego-a-oczekiwany-rozmiar-kubełka)
+		- [Czas wykonania algorytmu równoległego a liczba wątków](#czas-wykonania-algorytmu-równoległego-a-liczba-wątków)
+		- [Porównanie z algorytmem w wersji 2](#porównanie-z-algorytmem-w-wersji-2)
 - [Kod źródłowy](#kod-źródłowy)
 
 # Zadanie 1
@@ -107,7 +110,7 @@ bo niezgodność jest zbyt duża.
 Dla pozostałych eksperymentów wykresy są zgodne z oczekiwanymi charakterystykami.
 Widzimy, że ustawienie parametru chunk "na sztywno" nie przynosi dobrych efektów.
 
-`Guided` i `static` na `auto` osiągają podobne wyniki (najlepsze)
+`guided` i `static` na `auto` osiągają podobne wyniki (najlepsze)
 
 # Zadanie 2 - sortowanie kubełkowe (wersja 1)
 
@@ -137,12 +140,15 @@ Przeanalizujmy najpierw złożoność algorytmu sekwencyjnego w modelu RAM.
 
 ## Środowisko i kompilacja
 
-Wszystkie pomiary / eksperymenty przeprowadzone zostały na komputerze "Ares" (pojedynczy węzeł: `	48 cores, Intel(R) Xeon(R) Platinum 8268 CPU @ 2.90GHz`, `3,85 GB RAM`).
+* Wszystkie pomiary / eksperymenty przeprowadzone zostały na komputerze "Ares" (pojedynczy węzeł: `	48 cores, Intel(R) Xeon(R) Platinum 8268 CPU @ 2.90GHz`, `3,85 GB RAM`).
 Ze względu na [szczegóły implementacyjne](#uniknięcie-potrzeby-synchronizacji) kod programu sortującego
 (napisanego w `C++`) kompilowany był z użyciem `gcc 10.3.0` z flagami `-std=c++11 -fopenmp -O2`.
 
 Wersja `gcc` była podyktowana faktem, że w kodzie korzystam z szczegółu implementacyjnego `OpenMP` i lokalnie,
 gdzie program był testowany przed przeprowadzaniem właściwych eksperymentów, korzystam właśnie z `gcc 10.3.0`.
+
+* Wszystkie wynikowe punkty pomiarowe są średnią z 10 pomiarów.
+
 
 ## Szczegóły implementacji
 
@@ -187,9 +193,9 @@ docelowo rozkład jednostajny.
 Przeprowadziłem prostą weryfikację tego generatora, generując ok. 16 mln. liczb z przedziału $[0, 1)$ i rozmieszczając je do 32. równomiernych kubełków.
 Wynik tego eksperymentu przedstawiam na poniższym wykresie.
 
-![prng plot](src/plots/sort/prng-distribution-16777216-32.png)
-
-*Rozkład generatora `erand48`*
+| ![prng plot](src/plots/sort/prng-distribution-16777216-32.png) |
+|:--:|
+| *Rozkład generatora `erand48`* |
 
 Widzimy na powyższym wykresie, że przy przy dużej liczbie elementów w tablicy generator faktycznie daje próbki z rozkładu jednostajnego. Charakterystyka ta nie jest zachowana,
 jeżeli przeprowadzimy obliczenia dla małej liczby elementów, rzędu 100-1000. Nie stanowi to jednak problemu, gdyż wszystkie eksperymenty były przeprowadzane na znacznie
@@ -230,10 +236,96 @@ przez siebie kubełka i zapamięta wartość.
 
 ## Wyniki eksperymentów
 
-![seq](src/plots/sort/seq-256-external.png)
-![par-time](src/plots/sort/par-time-256-409-2023-04-22-10-07-50.png)
-![par-bar-time](src/plots/sort/par-bar-time-256-409-2023-04-22-10-07-50.png)
-![par-sp](src/plots/sort/par-sp-256-409-2023-04-22-10-07-50.png)
+### Czas wykonania algorytmu sekwencyjnego a oczekiwany rozmiar kubełka
+
+| ![seq](src/plots/sort/seq-256-external.png) |
+|:--:|
+| *Czas wykonania algorytmu sekwencyjnego a rozmiar kubełka, argmin: 409* |
+
+
+Na powyższym wykresie został przedstawiony czas wykonania algorytmu sekwencyjnego w zależności od rozmiaru kubełka. Są to wyniki pomiarów uzyskane przez jednego z członków mojego zespołu.
+Wyniki uzyskiwane przeze mnie były fatalne, **chociaż obydwaj uruchamialiśmy tą samą wersję algorytmu** (implementowaną przeze mnie).
+
+Przedstawiam je poniżej:
+
+| ![bad-seq](src/plots/sort/seq-256-2023-04-19-15-00-00.png) |
+|:--:|
+| *Czas wykonania algorytmu sekwencyjnego a rozmiar kubełka (moje pomiary), argmin: 3976* |
+
+
+Jedyne różnica to obecność flagi `-O2` przy kompilacji (która powinna raczej suprawnić pracę algorytmu). Takie sytuacje zdażają się jeszcze w kilku miejscach (jednakowy kod daje różne rezultaty w zależności od tego kto mierzy...) -- np. przy skalowaniu sortowania, o czym niżej.
+Naturalnym wnioskiem jest to, że słabo kontrolujemy środowisko eksperymentu, tzn. są jakieś zmienne których nie bierzemy pod uwagę i to one wpływają na różnice w wynikach -- brak sugestii.
+
+Wobec powyższego zdecydowaliśmy w grupie, że będziemy przeprowadzać obliczenia dla rozmiaru kubełka 500 i 409, a ja we własnym zakresie przeprowadziłem jeszcze pomiary dla swojego minimum: 3976.
+
+Wyniki znajdują sie na kolejnych wykresach.
+
+### Czas wykonania algorytmu równoległego a liczba wątków
+
+
+| ![par-time](src/plots/sort/par-time-256-409-2023-04-23-10-47-57.png) |
+|:--:|
+| *Czas wykonania algorytmu równoległego a liczba wątków* |
+
+Na powyższym wykresie czasu wykonania algorytmu równoległego w zależności od liczby wątków widzimy, że ogólna charakterystyka wykresu jest zgodna z oczekiwaniami teoretycznymi (zachowanie jak $1/x$), jednak ogólna
+wydajność (niebieska linia) jest niższa od idealnej (pomarańczowa, przerywana linia). Powody tego są lepiej widoczne na kolejnych wykresach.
+
+
+| ![par-bar-time](src/plots/sort/par-bar-time-256-409-2023-04-23-10-47-57.png) |
+|:--:|
+| *Czas wykonania algorytmu równoległego a liczba wątków, zestawienie poszczególnych faz* |
+
+
+
+| ![par-sp](src/plots/sort/par-sp-256-409-2023-04-23-10-47-57.png) |
+|:--:|
+| *Przyśpieszenie algorytmu równoległego a liczba wątków, wraz z przyśpieszeniem poszczególnych faz* |
+
+Z powyższych wykresów widzimy, że fazy `draw` i `scatter` skalują się bardzo dobrze, natomiast `sort` i `gather` znacznie gorzej (są wąskim gardłem algorytmu).
+
+W przypadku fazy `sort` oczekiwałem przyśpieszenia liniowego (i takie też otrzymali moi koledzy) -- jednak jest ono gorsze. Zastosowałem `std::sort` z biblioteki standardowej, który jest zaimplementowany
+jako miks `insertion sort`, `quick sort` i `heapsort` (wydajna implementacja), z tym, że nie jest ona realizowana w miejscu -- i to jest przypuszczalny powód takiego wyniku -- większa ilość kopi mogła negatywnie wpłynąć na wydajność.
+
+W przypadku `gather` wynika to z pewnością (przynajmniej częściowo) z sposobu pomiaru czasu -- wyniki brane są tylko z wątku zerowego, który przy użyciu klauzuli `#pragma for schedule(static)` będzie
+zajmował się początkowymi kubełkami -- co w połączeniu z optymalizacją [`Usprawnienie fazy gather`](#usprawnienie-fazy-gather) sprawia, że nie potrzebuje on w ogóle iterować przez kubełki
+w celu zliczenia ich rozmiarów (a kubełków potencjalnie może być dużo, u mnie to $\frac{1}{400}$ liczby elementów).
+
+Po przeprowadzeniu dodatkowych eksperymentów okazało się, że kluczowa jest tutaj kompilacja z flagą `-O2`! Oto wykresy czasu i przyśpieszenia algorytmu równoległego uzyskanego dla programu skompilowanego bez tej flagi:
+
+| ![par-time](src/plots/sort/par-time-256-409-2023-04-23-12-36-08.png) |
+|:--:|
+| *Czas wykonania algorytmu równoległego a liczba wątków (program skompilowany bez `-O2`)* |
+
+
+
+| ![par-bar-time](src/plots/sort/par-bar-time-256-409-2023-04-23-12-36-08.png) |
+|:--:|
+| *Czas wykonania algorytmu równoległego a liczba wątków, zestawienie poszczególnych faz (program skompilowany bez `-O2`)* |
+
+
+
+| ![par-sp](src/plots/sort/par-sp-256-409-2023-04-23-12-36-08.png) |
+|:--:|
+| *Przyśpieszenie algorytmu równoległego a liczba wątków, wraz z przyśpieszeniem poszczególnych faz (program skompilowany bez `-O2`)* |
+
+
+Proszę zauważyć, że:
+
+1. Ogólne czasy wykonania algorymu wzrosły (1.5x - 2x krotnie)
+2. Nie ma już superskalowania dla fazy `scatter`
+3. Faza `gather` skaluje się w końcu zgodnie z oczekiwaniami!
+
+Wnioskuję z tego następujące fakty:
+
+1. Superskalowanie w fazie `scatter` wynikało z optymalizacji dokonanych przez kompiltor, przypuszczalnie w organizacji tego jakie dane znajdują się w jakim momencie w pamięci cache aplikacji -- dzięki czemu
+	wątki wykonywały znacznie mniej odczytów z pamięci RAM.
+2. Faza `gather` mogła zostać przypuszczalnie **znacznie** zoptymalizowana i zredukowana do pojedynczych wowołań `std::memcpy` - kopiującej przy jednym wywołaniu całe regiony pamięci, a nie tak jak jest to zapisane w algorytmie: element po elemencie.
+
+### Porównanie z algorytmem w wersji 2
+
+
+
+
 
 # Kod źródłowy
 
