@@ -46,51 +46,51 @@ Zdecydowałem się na skalowanie silne.
 
 Poniżej zamieszczam serię wykresów prezentujacych pozyskane wyniki.
 
-![Dynamic 1](src/plots/combined-dynamic-1.png)
+![Dynamic 1](src/plots/draw/combined-dynamic-1.png)
 
 *Podpis*
 
-![Dynamic 4](src/plots/combined-dynamic-4.png)
+![Dynamic 4](src/plots/draw/combined-dynamic-4.png)
 
 *Podpis*
 
-![Dynamic 16](src/plots/combined-dynamic-16.png)
+![Dynamic 16](src/plots/draw/combined-dynamic-16.png)
 
 *Podpis*
 
-![Dynamic 256](src/plots/combined-dynamic-256.png)
+![Dynamic 256](src/plots/draw/combined-dynamic-256.png)
 
 *Podpis*
 
-![Guided 1](src/plots/combined-guided-1.png)
+![Guided 1](src/plots/draw/combined-guided-1.png)
 
 *Podpis*
 
-![Guided 4](src/plots/combined-guided-4.png)
+![Guided 4](src/plots/draw/combined-guided-4.png)
 
 *Podpis*
 
-![Guided 16](src/plots/combined-guided-16.png)
+![Guided 16](src/plots/draw/combined-guided-16.png)
 
 *Podpis*
 
-![Guided 256](src/plots/combined-guided-256.png)
+![Guided 256](src/plots/draw/combined-guided-256.png)
 
 *Podpis*
 
-![static 1](src/plots/combined-static-1.png)
+![static 1](src/plots/draw/combined-static-1.png)
 
 *Podpis*
 
-![static 4](src/plots/combined-static-4.png)
+![static 4](src/plots/draw/combined-static-4.png)
 
 *Podpis*
 
-![static 16](src/plots/combined-static-16.png)
+![static 16](src/plots/draw/combined-static-16.png)
 
 *Podpis*
 
-![static 256](src/plots/combined-static-256.png)
+![static 256](src/plots/draw/combined-static-256.png)
 
 *Podpis*
 
@@ -184,6 +184,17 @@ dlatego wykluczyłem ją z analizy.
 Wykorzystano `erand48`, który jest generatorem kongruencyjnym (nie jest to podejście które daje najlepsze rezultaty) dającym
 docelowo rozkład jednostajny.
 
+Przeprowadziłem prostą weryfikację tego generatora, generując ok. 16 mln. liczb z przedziału $[0, 1)$ i rozmieszczając je do 32. równomiernych kubełków.
+Wynik tego eksperymentu przedstawiam na poniższym wykresie.
+
+![prng plot](src/plots/sort/prng-distribution-16777216-32.png)
+
+*Rozkład generatora `erand48`*
+
+Widzimy na powyższym wykresie, że przy przy dużej liczbie elementów w tablicy generator faktycznie daje próbki z rozkładu jednostajnego. Charakterystyka ta nie jest zachowana,
+jeżeli przeprowadzimy obliczenia dla małej liczby elementów, rzędu 100-1000. Nie stanowi to jednak problemu, gdyż wszystkie eksperymenty były przeprowadzane na znacznie
+większej liczbie elementów (ok. 33 mln.).
+
 
 ### Zrównoleglanie pętli `for`
 
@@ -219,10 +230,10 @@ przez siebie kubełka i zapamięta wartość.
 
 ## Wyniki eksperymentów
 
-![seq](src/plots/seq-256.png)
-![par-time](src/plots/par-time-256-500.png)
-![par-bar-time](src/plots/par-bar-time-256-500.png)
-![par-sp](src/plots/par-sp-256-500.png)
+![seq](src/plots/sort/seq-256-external.png)
+![par-time](src/plots/sort/par-time-256-409-2023-04-22-10-07-50.png)
+![par-bar-time](src/plots/sort/par-bar-time-256-409-2023-04-22-10-07-50.png)
+![par-sp](src/plots/sort/par-sp-256-409-2023-04-22-10-07-50.png)
 
 # Kod źródłowy
 
