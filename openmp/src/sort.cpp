@@ -178,10 +178,10 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
     }
     TIME_MEASURE_END(p_result.scatter_time);
 
-    // #pragma omp barrier
+    #pragma omp barrier
 
     TIME_MEASURE_BEGIN(p_result.sort_time);
-    #pragma omp for schedule(static)
+    #pragma omp for schedule(guided)
     for (BucketCount_t i = 0; i < cfg.args.n_buckets; ++i) {
       // std::sort(std::begin(buckets[i]), std::end(buckets[i])); 
       std::qsort(buckets[i].data(), buckets[i].size(), sizeof(Data_t), qsort_cmp);
