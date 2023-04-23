@@ -10,7 +10,7 @@ smallmarksize = 50
 primarymarkstyle = 'o'
 secondarymarkstyle = '^'
 
-plotdir = path.Path('plots')
+plotdir = path.Path('plots', 'draw')
 if not plotdir.is_dir():
     plotdir.mkdir(parents=True, exist_ok=True)
 
@@ -29,8 +29,6 @@ assert datafile.is_file(), "Datafile exists and is a file"
 
 data_raw = pl.read_csv(datafile, has_header=True).sort(
     pl.col(['type', 'threads', 'chunk', 'size']))
-
-# print(data_raw)
 
 # primary key is:
 # sid x type x threads x chunk x size
@@ -51,9 +49,10 @@ arrsizes = data_mean.get_column('size').unique().sort()
 exptypes = data_mean.get_column('type').unique().sort()
 
 # Plot time
-for xtype in exptypes:
-    for size in arrsizes:
-        fig, (plot_time, plot_sp) = plt.subplots(nrows=1, ncols=2)
+for size in arrsizes:
+    fig, (plot_time, plot_sp) = plt.subplots(nrows=1, ncols=2)
+
+    for xtype in exptypes:
 
         data_time = data_mean.filter((pl.col('size') == size) & (pl.col('type') == xtype))
         data_time_ch_2 = data_time.filter(pl.col('chunk') == '2').sort(
@@ -61,14 +60,14 @@ for xtype in exptypes:
         data_time_ch_auto = data_time.filter(pl.col('chunk') == 'auto').sort(
             pl.col('threads')).select(pl.col('time'))
         # print(data_time_ch_2)
-        plot_time.plot(threads, data_time_ch_2, label="Chunk: 2",
+        plot_time.plot(threads, data_time_ch_2, label=f"{xtype} chunk: 2",
                        marker=primarymarkstyle, linestyle=':')
-        plot_time.plot(threads, data_time_ch_auto, label="Chunk: auto",
+        plot_time.plot(threads, data_time_ch_auto, label=f"{xtype} chunk: auto",
                        marker=secondarymarkstyle, linestyle=':')
 
         strsize = int(size * 8 / 2 ** 20)
         plot_time.set(
-            title=f"{exctx}, schedule: {xtype}, size: {strsize}MB",
+            title=f"{exctx}, size: {strsize}MB",
             xlabel="Górny limit liczby wątków",
             ylabel="Czas [us]"
         )
@@ -80,24 +79,24 @@ for xtype in exptypes:
         data_speedup_ch_auto = data_time.filter(pl.col('chunk') == 'auto').sort(
             pl.col('threads')).select((t1_ch_auto / pl.col('time')).alias("speedup"))
 
-        plot_sp.plot(threads, data_speedup_ch_2, label="Chunk: 2",
+        plot_sp.plot(threads, data_speedup_ch_2, label=f"{xtype} chunk: 2",
                      marker=primarymarkstyle, linestyle=":")
-        plot_sp.plot(threads, data_speedup_ch_auto, label="Chunk: auto",
+        plot_sp.plot(threads, data_speedup_ch_auto, label=f"{xtype} chunk: auto",
                      marker=secondarymarkstyle, linestyle=":")
 
         plot_sp.set(
-            title=f"{exctx}, schedule: {xtype}, size: {strsize}MB, skalowanie silne",
+            title=f"{exctx}, size: {strsize}MB, skalowanie silne",
             xlabel="Górny limit liczby wątków",
             ylabel="Przyśpieszenie"
         )
 
-        plot_time.grid()
-        plot_time.legend()
-        plot_sp.grid()
-        plot_sp.legend()
+    plot_time.grid()
+    plot_time.legend()
+    plot_sp.grid()
+    plot_sp.legend()
 
-        fig.tight_layout()
-        fig.savefig(plotdir.joinpath(f'combined-{xtype}-{strsize}.png'))
+    fig.tight_layout()
+    fig.savefig(plotdir.joinpath(f'combined-{size}.png'))
 
 plt.show()
 plt.close()
