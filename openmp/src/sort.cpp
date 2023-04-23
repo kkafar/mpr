@@ -84,6 +84,10 @@ static bool summary(Data_t *data, const Args &args);
 // Assumes that rstate consists of 3 * 16 bytes.
 inline static int32_t init_rand_state(uint16_t *rstate);
 
+inline static int qsort_cmp(const void *x, const void *y) {
+  return (*static_cast<const Data_t *>(x) - *static_cast<const Data_t *>(y));
+}
+
 static ExpResult bucket_sort_sync(Data_t *data, const ExpCfg cfg) {
   ExpResult result;
   result.cfg = cfg;
@@ -179,7 +183,8 @@ static ExpResult bucket_sort_1(Data_t *data, const ExpCfg cfg) {
     TIME_MEASURE_BEGIN(p_result.sort_time);
     #pragma omp for schedule(static)
     for (BucketCount_t i = 0; i < cfg.args.n_buckets; ++i) {
-      std::sort(std::begin(buckets[i]), std::end(buckets[i])); 
+      // std::sort(std::begin(buckets[i]), std::end(buckets[i])); 
+      std::qsort(buckets[i].data(), buckets[i].size(), sizeof(Data_t), qsort_cmp);
     }
     TIME_MEASURE_END(p_result.sort_time);
 
