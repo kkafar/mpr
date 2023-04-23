@@ -50,68 +50,44 @@ Zdecydowałem się na skalowanie silne.
 
 Poniżej zamieszczam serię wykresów prezentujacych pozyskane wyniki.
 
-![Dynamic 1](src/plots/draw/combined-dynamic-1.png)
+| ![draw-comb-1mb](src/plots/draw/combined-131072.png) |
+|:--:|
+| *Wykres 1.1 Zestawienie wyników dla różnych konfiguracji przy rozmiarze tablicy 1,31+e5* |
 
-*Podpis*
 
-![Dynamic 4](src/plots/draw/combined-dynamic-4.png)
+| ![draw-comb-4mb](src/plots/draw/combined-524288.png) |
+|:--:|
+| *Wykres 1.2 Zestawienie wyników dla różnych konfiguracji przy rozmiarze tablicy 5,24+e5* |
 
-*Podpis*
 
-![Dynamic 16](src/plots/draw/combined-dynamic-16.png)
+| ![draw-comb-16mb](src/plots/draw/combined-2097152.png) |
+|:--:|
+| *Wykres 1.3 Zestawienie wyników dla różnych konfiguracji przy rozmiarze tablicy 2,1+e6* |
 
-*Podpis*
 
-![Dynamic 256](src/plots/draw/combined-dynamic-256.png)
+| ![draw-comb-64mb](src/plots/draw/combined-8388608.png) |
+|:--:|
+| *Wykres 1.4 Zestawienie wyników dla różnych konfiguracji przy rozmiarze tablicy 8,4+e6* |
 
-*Podpis*
 
-![Guided 1](src/plots/draw/combined-guided-1.png)
-
-*Podpis*
-
-![Guided 4](src/plots/draw/combined-guided-4.png)
-
-*Podpis*
-
-![Guided 16](src/plots/draw/combined-guided-16.png)
-
-*Podpis*
-
-![Guided 256](src/plots/draw/combined-guided-256.png)
-
-*Podpis*
-
-![static 1](src/plots/draw/combined-static-1.png)
-
-*Podpis*
-
-![static 4](src/plots/draw/combined-static-4.png)
-
-*Podpis*
-
-![static 16](src/plots/draw/combined-static-16.png)
-
-*Podpis*
-
-![static 256](src/plots/draw/combined-static-256.png)
-
-*Podpis*
+| ![draw-comb-256mb](src/plots/draw/combined-33554432.png) |
+|:--:|
+| *Wykres 1.5 Zestawienie wyników dla różnych konfiguracji przy rozmiarze tablicy 33,6+e6* |
 
 # Wnioski
 
-Dla eksperynemnut `dynamic` coś jest zrobione źle.
+Dla tego typu zadania klauzula `schedule(dynamic)` sprawdza się zdecydowanie najgorzej. Przydziela ona wątkom zadania rozmiaru `chunk_size` (domyślnie $1$) "na żądanie".
+Zdaje się, że przy `chunk_size` 1 bądź 2 (z takimi eksperymentowałem) i bardzo małym rozmiarze zadania (wylosowanie pojedynczej liczby pseudolosowej) narzut organizacyjny zakłóca poprawne działanie.
+Przy większym `chunk_size` bądź znacząco większym rozmiarze pojedynczego zadania być może ta klauzula sprawdziła by się lepiej (wykresy 1.{1..5}).
 
-Wyniki nie są zgodne z oczekiwaniami. Oczekiwane charakterystyki to spadek $1/x$ dla czasu oraz
-liniowy wzrost dla przyśpieszenia.
 
-Najprawdopodobniejsza przyczyna to błąd w kodzie / konfiguracji. Nie jest to raczej wina vClustr'a
-bo niezgodność jest zbyt duża.
+Ustawianie `chunk_size` "na sztywno" daje złę efekty. `chunk_size` powinien pozostawać w zależności do rozmiaru pojedynczego zadania (aby narzut organizacyjny stanowił możliwie małą część czasu wykonania) (wykresy 1.{1..5})
 
-Dla pozostałych eksperymentów wykresy są zgodne z oczekiwanymi charakterystykami.
-Widzimy, że ustawienie parametru chunk "na sztywno" nie przynosi dobrych efektów.
 
-`guided` i `static` na `auto` osiągają podobne wyniki (najlepsze)
+Wartości domyślne `chunk_size` sprawdzają się relatywnie dobrze (wykres 1.{4,5})
+
+
+`guided` i `static` na `auto` osiągają podobne wyniki (najlepsze) (wykresy 1.{4,5}).
 
 # Zadanie 2 - sortowanie kubełkowe (wersja 1)
 
@@ -192,7 +168,7 @@ Również istotny jest fakt, że wynikami są pomiary dla wątku 0, inne dane s�
 ### PRNG
 
 Wykorzystano `erand48`, który jest generatorem kongruencyjnym (nie jest to podejście które daje najlepsze rezultaty) dającym
-docelowo rozkład jednostajny.
+docelowo rozkład jednostajny. Istotne jest to, że nie korzysta on z wspólnego (globalnego) stanu i dobrze zachowuje się w środowisku wielowątkowym.
 
 Przeprowadziłem prostą weryfikację tego generatora, generując ok. 16 mln. liczb z przedziału $[0, 1)$ i rozmieszczając je do 32. równomiernych kubełków.
 Wynik tego eksperymentu przedstawiam na poniższym wykresie.
