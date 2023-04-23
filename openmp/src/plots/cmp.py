@@ -63,27 +63,34 @@ def process_cmp(data_file_1: path.Path, data_file_2: path.Path, plot_dir: path.P
     total_mean_0_1 = y_data_1.head(1)[0]
     total_mean_0_2 = y_data_2.head(1)[0]
 
-    fig, ((plot_draw, plot_scatter), (plot_sort, plot_gather)) = plt.subplots(nrows=2, ncols=2)
-    plot_map = {
-        "draw": plot_draw,
-        "scatter": plot_scatter,
-        "sort": plot_sort,
-        "gather": plot_gather
-    }
+    # fig, ((plot_draw, plot_scatter), (plot_sort, plot_gather)) = plt.subplots(nrows=2, ncols=2)
+    fig, plot_map = plt.subplot_mosaic([
+        ['total', 'total'],
+        ['total', 'total'],
+        ['draw', 'scatter'],
+        ['sort', 'gather']
+    ])
 
-    for col_name in COL_NAMES[1:]:
+    # plot_map = {
+    #     "draw": plot_draw,
+    #     "scatter": plot_scatter,
+    #     "sort": plot_sort,
+    #     "gather": plot_gather
+    # }
+
+    for col_name in COL_NAMES:
         plot_map[col_name].errorbar(
             x_data,
             data_df_1.get_column(f'{col_name}_mean'),
             yerr=data_df_1.get_column(f'{col_name}_std'),
-            marker=PRIMARY_MAKR_STYLE, linestyle='--', label=f'{col_name} 1'
+            marker=PRIMARY_MAKR_STYLE, linestyle='--', label=f'{col_name} -O2'
         )
 
         plot_map[col_name].errorbar(
             x_data,
             data_df_2.get_column(f'{col_name}_mean'),
             yerr=data_df_1.get_column(f'{col_name}_std'),
-            marker=SECONDARY_MARK_STYLE, linestyle='--', label=f'{col_name} 2'
+            marker=SECONDARY_MARK_STYLE, linestyle='--', label=f'{col_name} w/o -O2'
         )
 
         plot_map[col_name].set(
@@ -94,21 +101,27 @@ def process_cmp(data_file_1: path.Path, data_file_2: path.Path, plot_dir: path.P
         plot_map[col_name].grid()
         plot_map[col_name].legend()
 
-    fig.suptitle('Porównanie czasu wykonania poszczególnych faz w wersjach 1 i 2 algorytmu')
+    fig.suptitle('Porównanie czasu wykonania poszczególnych faz (z O2 i bez)')
     fig.tight_layout()
     fig.savefig(plot_dir.joinpath(f'cmp-time-{bucket_size}-{data_file_date_1}-{data_file_date_2}.png'))
     # plt.close(fig)
 
-    fig, ((plot_draw, plot_scatter), (plot_sort, plot_gather)) = plt.subplots(nrows=2, ncols=2)
+    # fig, ((plot_draw, plot_scatter), (plot_sort, plot_gather)) = plt.subplots(nrows=2, ncols=2)
+    fig, plot_map = plt.subplot_mosaic([
+        ['total', 'total'],
+        ['total', 'total'],
+        ['draw', 'scatter'],
+        ['sort', 'gather']
+    ])
 
-    plot_map = {
-        "draw": plot_draw,
-        "scatter": plot_scatter,
-        "sort": plot_sort,
-        "gather": plot_gather
-    }
+    # plot_map = {
+    #     "draw": plot_draw,
+    #     "scatter": plot_scatter,
+    #     "sort": plot_sort,
+    #     "gather": plot_gather
+    # }
 
-    for col_name in COL_NAMES[1:]:
+    for col_name in COL_NAMES:
         ds_1 = data_df_1.get_column(f'{col_name}_mean')
         ds_2 = data_df_2.get_column(f'{col_name}_mean')
 
@@ -116,14 +129,14 @@ def process_cmp(data_file_1: path.Path, data_file_2: path.Path, plot_dir: path.P
             x_data,
             ds_1.head(1) / ds_1,
             marker=PRIMARY_MAKR_STYLE, linestyle='--',
-            label=f'{col_name} 1'
+            label=f'{col_name} -O2'
         )
 
         plot_map[col_name].plot(
             x_data,
             ds_2.head(1) / ds_2,
             marker=PRIMARY_MAKR_STYLE, linestyle='--',
-            label=f'{col_name} 2'
+            label=f'{col_name} w/o -O2'
         )
 
         plot_map[col_name].set(
@@ -134,7 +147,7 @@ def process_cmp(data_file_1: path.Path, data_file_2: path.Path, plot_dir: path.P
         plot_map[col_name].grid()
         plot_map[col_name].legend()
 
-    fig.suptitle('Porównanie przyśpieszenia poszczególnych faz w wersjach 1 i 2 algorytmu')
+    fig.suptitle('Porównanie przyśpieszenia poszczególnych faz (z O2 i bez)')
     fig.tight_layout()
     fig.savefig(plot_dir.joinpath(f'cmp-sp-{bucket_size}-{data_file_date_1}-{data_file_date_2}.png'))
     # plt.close(fig)
