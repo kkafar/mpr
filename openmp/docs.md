@@ -37,6 +37,7 @@ Grupa: wtorek 15:00
 		- [Czas wykonania algorytmu sekwencyjnego a oczekiwany rozmiar kubełka](#czas-wykonania-algorytmu-sekwencyjnego-a-oczekiwany-rozmiar-kubełka)
 		- [Czas wykonania algorytmu równoległego a liczba wątków](#czas-wykonania-algorytmu-równoległego-a-liczba-wątków)
 		- [Porównanie z algorytmem w wersji 2](#porównanie-z-algorytmem-w-wersji-2)
+		- [Poprawienie wydajności sortowania](#poprawienie-wydajności-sortowania)
 - [Kod źródłowy](#kod-źródłowy)
 
 # Zadanie 1
@@ -296,10 +297,10 @@ Po przeprowadzeniu dodatkowych eksperymentów okazało się, że kluczowa jest t
 
 Proszę zauważyć, że:
 
-1. Ogólne czasy wykonania algorymu wzrosły (1.5x - 2x krotnie)
-2. Nie ma już superskalowania dla fazy `scatter`
-3. Faza `gather` skaluje się w końcu zgodnie z oczekiwaniami!
-4. Algorytm skompilowany z flagą `-O2` zyskuje szczególnie w fazach `scatter` i `gather`.
+1. Ogólne czasy wykonania algorymu wzrosły 1.5x - 2x krotnie (algorytm w wersji z `-O2` w stosunku do kompilowanego bez optymalizacji) (wykres 2.8)
+2. Nie ma już superskalowania dla fazy `scatter` (wykres 2.7)
+3. Faza `gather` skaluje się w końcu zgodnie z oczekiwaniami ==> wygenerowany kod maszynowy bliżej odzwierciedla logikę w C++! (wykres 2.7)
+4. Algorytm skompilowany z flagą `-O2` zyskuje szczególnie w fazach `scatter` i `gather` (wykresy 2.8 i 2.9).
 
 Wnioskuję z tego następujące fakty:
 
@@ -332,6 +333,32 @@ Jest to trudne do wytłumaczenia, jako, że implementacja tej fazy w obu algoryt
 
 Na wykresie przyśpieszenia 2.11 obserwujemy że algorytm drugi ma je średnio większe. Jest to głównie konsekwencja fazy `sort`, która prezentuje lepsze przyśpieszenie dla algorytmu 2., jednak trzeba tutaj zaznaczyć, że to w algorytmie 1 we wszystkich punktach pomiarowych
 osiągnięty czas jest lepszy.
+
+
+### Poprawienie wydajności sortowania
+
+Przeprowadziłem dodatkowy eksperyment podmieniając `#pragma for schedule(static)` na `#pragma for schedule(guided)` przy pętli odpowiadającej za sortowanie (w celu zapewnienia poprawności dodałem też barierę pomiędzy fazą `scatter` a `sort`).
+
+Rezultaty zamieszczam poniżej:
+
+| ![par-guided-time](src/plots/sort/par-time-256-409-2023-04-23-21-54-02.png)
+|:--:|
+| *Wykres 2.12 Czas wykonania algorytmu równoległego a liczba wątków z `schedule(guided)` przy fazie `sort`*|
+
+
+| ![par-guided-bar-time](src/plots/sort/par-bar-time-256-409-2023-04-23-21-54-02.png)
+|:--:|
+| *Wykres 2.13 Czas wykonania algorytmu równoległego a liczba wątków z `schedule(guided)` przy fazie `sort`*|
+
+
+| ![par-guided-sp](src/plots/sort/par-sp-256-409-2023-04-23-21-54-02.png)
+|:--:|
+| *Wykres 2.14 Przyśpieszenie algorytmu równoległego a liczba wątków z `schedule(guided)` przy fazie `sort`*|
+
+W szczególności na wykresie 2.14 widzimy, że przy takiej konfiguracji sortowanie przyśpiesza prawie idealnie ($y = x$).
+
+Przypomnijmy, że `schedule(guided)` przydziela kolejnym wątkom porcje "na żądanie" w porcjach proporcjonalnych do ilości jeszcze nierozdzielonych iteracji. Sugeruje to, że przy `schedule(static)`, gdzie iteracje (czyli kubełki) były przydzielane
+wątkom możliwe po równo zachodziło marnowanie mocy obliczeniowej -- część wątków czekała na niejawnej synchronizacji pod koniec bloku `for` nie wykonując żadnej pracy, podczas gdy inne wątki ciągle sortowały swoje kubełki.
 
 # Kod źródłowy
 
