@@ -23,6 +23,11 @@ Grupa: wtorek 15:00
 - [Zadanie 2 - sortowanie kubełkowe (wersja 1)](#zadanie-2---sortowanie-kubełkowe-wersja-1)
 	- [Implementowany algorytm](#implementowany-algorytm)
 		- [Analiza złożoności](#analiza-złożoności)
+			- [`draw`](#draw)
+			- [`scatter`](#scatter)
+			- [`sort`](#sort)
+			- [`gather`](#gather)
+			- [Całość](#całość)
 	- [Środowisko i kompilacja](#środowisko-i-kompilacja)
 	- [Szczegóły implementacji](#szczegóły-implementacji)
 		- [Założenia](#założenia)
@@ -112,9 +117,43 @@ Implementowany był wariant 1:
 
 ### Analiza złożoności
 
-Przyjmijmy onaczenia: $n$ - liczba elementów do posortowania, $p$ - liczba wątków, $b$ - liczba kubełków.
+Przyjmijmy onaczenia: $n_e$ - liczba elementów do posortowania, $n_w$ - liczba wątków, $n_k$ - liczba kubełków.
 
-Przeanalizujmy najpierw złożoność algorytmu sekwencyjnego w modelu RAM.
+Rozbijmy analizę na poszczególne fazy, przyjmując model PRAM CRCW (na pewno?) i obierając perspektywę pojedynczego wątku.
+
+#### `draw`
+
+W mojej implementacji liczba operacji do wykonania jest dzielona możliwie po równo pomiędzy wątki -- każdy z nich uzupełnia jedynie fragment tablicy o wielkości $\frac{n_e}{n_w}$ ==> $O(\frac{n_e}{n_w})$.
+
+
+#### `scatter`
+
+Każdy z wątków przegląda całą tablicę wyjściową. Wyniki przyśpieszenia, które prezentuję w kolejnych sekcjach sugerują, że iteracje w których wątek wstawia liczbę do wektora są znacznie cięższe od tych, w których jedynie sprawdza warunek -- wtedy mielibyśmy $O(\frac{n_e}{n_w})$. Przyjmijmy jednak:
+
+$O(n_e)$
+
+
+#### `sort`
+
+Zakładam rozmiar kubełka na tyle mały, że czas sortowania pojedynczego możemy przyjąć za stały. Wtedy, przy jednostajnym rozkładzie liczb, każdy wątek sortuje $\frac{n_k}{n_w}$ kubełków ==> $O(\frac{n_k}{n_w})$.
+
+
+#### `gather`
+
+Wątek musi przepisać do tablicy wyjściowej $\frac{n_e}{n_w}$ elementów ==> $O(\frac{n_e}{n_w})$.
+
+
+#### Całość
+
+Finalnie otrzymujemy:
+
+$O(\frac{2n_e + n_k}{n_w} + n_e)$ lub alternatywnie (faza `scatter`) $O(\frac{3n_e + n_k}{n_w})$
+
+wtedy praca takiego algorytmu to
+
+$O(2n_e + n_k + n_e * n_w)$ lub alternatywnie $O(3n_e + n_k)$.
+
+Nie ustalając liczby wątków w pierwszym przypadku algorytm nie będzie sekwencyjnie efektywny, natomaist w drugim tak -- w odniesieniu do algorytmu sekwencyjnego (1 wątek) (wolno mi tak porównać?). Przypomnijmy, że algorytm sekwencyjny będzie miał złożoność $O(n_e + n_k)$.
 
 ## Środowisko i kompilacja
 
@@ -308,7 +347,8 @@ Wnioskuję z tego następujące fakty:
 	wątki wykonywały znacznie mniej odczytów z pamięci RAM.
 2. Faza `gather` mogła zostać przypuszczalnie **znacznie** zoptymalizowana i zredukowana do pojedynczych wowołań `std::memcpy` - kopiującej przy jednym wywołaniu całe regiony pamięci, a nie tak jak jest to zapisane w algorytmie: element po elemencie.
    W takim wypadku pozostaje tam bardzo mało do skalowania (pracy do rozbijania pomiędzy wątki) (wraz ze wzrostem liczby kubełków zwiększa się tylko liczba potrzebnych wywołań). Zwracam uwagę także na to, że bez flagi `-O2` faza `gather` przyśpiesza lepiej
-	 (zgodnie z oczekiwaniami) ale pomimo przyśpieszenia ciągle działa wolniej niż w programie skompilowanym z tą opcją.
+	 (zgodnie z oczekiwaniami) ale pomimo przyśpieszenia ciągle działa wolniej niż w programie skompilowanym z tą opcją. Robiłem porównanie kodu wynikowego (asemblera) korzystając z platformy [`godbolt'](https://godbolt.org/z/qv4caKnb3) jednak nie udało mi się znaleźć konkretnego miejsca odpowiedzialnego za tak dużą optymalizację. Kod wynikowy (z flagą `-O2`)
+	 jest o wiele krótszy, dotyczy to też operacji w pętli fazy `gather`, ale nie wyjaśnia to zaniku skalowania.
 
 ### Porównanie z algorytmem w wersji 2
 
