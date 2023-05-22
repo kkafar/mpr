@@ -11,6 +11,11 @@ data_files=("data-1GB.txt" "data-5GB.txt" "data-10GB.txt")
 rust_mapper="rust/mapper/target/release/mapper"
 rust_reducer="rust/reducer/target/release/reducer"
 
+if [[ $# -gt 1 ]]
+then
+  data_dir="$1"  
+fi
+
 # Workaround to avoid using shell buitin `time` cmd
 time_cmd="$(which time)"
 
