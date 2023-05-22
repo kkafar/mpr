@@ -16,7 +16,7 @@ fn main() {
             // (word, count)
         })
         .map(|(word, str_count)| {
-            (word, str_count.parse::<usize>().unwrap()) 
+            (word, str_count.parse::<usize>().unwrap_or(0)) 
         })
         .for_each(|(word, count)| {
             if let Some(crt_count) = wtc.get_mut(&word) {
