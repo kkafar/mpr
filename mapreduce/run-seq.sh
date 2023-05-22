@@ -47,7 +47,7 @@ do
   file="${data_files[${i}]}"
   size="${sizes[${i}]}"
   # echo "Running for file ${file}, size ${size}"
-  "${time_cmd}" --format="%E" --output ${tmp_file} cat ${data_dir}/${file} | ${rust_mapper} | ${rust_reducer} &> /dev/null
+  "${time_cmd}" --format="%e" --output ${tmp_file} cat ${data_dir}/${file} | ${rust_mapper} | ${rust_reducer} &> /dev/null
   cat ${tmp_file} | awk -v mode="${mode}" -v size="${size}" -F ',' '{ print $0 "," mode "," size }' >> ${result_file}
 done
 
