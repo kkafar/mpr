@@ -1,4 +1,4 @@
-itime,mode,size
+time,mode,size
 48.78,ec2,1
 243.46,ec2,5
 484.08,ec2,10
