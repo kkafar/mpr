@@ -3,8 +3,8 @@
 sizes=("1" "5" "10")
 
 mode="unknown"
-mapper="rust/mapper/target/release/mapper"
-reducer="rust/reducer/target/release/reducer"
+mapper="./rust/mapper/target/release/mapper"
+reducer="./rust/reducer/target/release/reducer"
 
 bucket_url="s3://bucket-mpr"
 input_file="${bucket_url}/data-1GB.txt"
@@ -36,9 +36,10 @@ fi
 time_cmd="$(which time)"
 ${time_cmd} --format "%e" hadoop jar /usr/lib/hadoop/hadoop-streaming.jar \
   -files "${mapper}","${reducer}" \
-  -mapper "${mapper}" \ 
+  -mapper "${mapper}" \
   -reducer "${reducer}" \
   -input "${input_file}" \
   -output "${output_dir}"
 
 hdfs dfs -get ${output_dir}
+hdfs dfs -rm -r ${output_dir}
