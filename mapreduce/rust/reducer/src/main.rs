@@ -1,6 +1,5 @@
 use std::{collections::HashMap, io::Write};
 
-// This program assumes that stdin is sorted!!
 fn main() {
     let mut wtc: HashMap<String, usize> = HashMap::new();
 
@@ -11,9 +10,6 @@ fn main() {
         .map(|line| {
             let split = line.split_once(',').unwrap();
             (split.0.to_owned(), split.1.to_owned())
-            // let word = split.0.to_owned();
-            // let count = split.1.to_owned();
-            // (word, count)
         })
         .map(|(word, str_count)| {
             (word, str_count.parse::<usize>().unwrap_or(0)) 
