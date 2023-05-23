@@ -10,4 +10,5 @@ cargo build --release
 cargo install --root ${root_dir} --path .
 cd ${root_dir}
 
+mv bin/* .
 
