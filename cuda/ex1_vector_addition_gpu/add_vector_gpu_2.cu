@@ -45,8 +45,9 @@ __global__ void device_add(int *a, int *b, int *c) {
 
 // basically just fills the array with index.
 void fill_array(int *data, int size) {
-  for (int idx = 0; idx < size; idx++)
-    data[idx] = idx;
+  for (int i = 0; i < size; ++i) {
+    data[i] = i;
+  }
 }
 
 void print_output(int *a, int *b, int *c, int size) {
@@ -71,14 +72,15 @@ int main(void) {
     int *d_a, *d_b, *d_c; // device copies of a, b, c
     int threads_per_block = 0, no_of_blocks = 0;
     GpuTimer timer;
-
-    int size = arr_sizes[i] * sizeof(int);
+    
+    int n_elems = arr_sizes[i];
+    int size = n_elems * sizeof(int);
 
     // Alloc space for host copies of a, b, c and setup input values
     a = (int *)malloc(size);
-    fill_array(a, size);
+    fill_array(a, n_elems);
     b = (int *)malloc(size);
-    fill_array(b, size);
+    fill_array(b, n_elems);
     c = (int *)malloc(size);
 
     // Alloc space for device copies of a, b, c
@@ -100,7 +102,7 @@ int main(void) {
     cudaMemcpy(c, d_c, size, cudaMemcpyDeviceToHost);
 
     // print_output(a,b,c);
-    printf("%d,%d,%f\n", arr_sizes[i], no_of_blocks, timer.Elapsed());
+    printf("%d,%d,%f\n", n_elems, no_of_blocks, timer.Elapsed());
     // printf("N = %d; no_of_blocks = %d; Elapsed time = %f ms\n", N,
     // no_of_blocks,
     //        timer.Elapsed());
