@@ -4,6 +4,32 @@
 #define N 2048
 #define BLOCK_SIZE 32
 
+struct GpuTimer {
+  cudaEvent_t start;
+  cudaEvent_t stop;
+
+  GpuTimer() {
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+  }
+
+  ~GpuTimer() {
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+  }
+
+  void Start() { cudaEventRecord(start, 0); }
+
+  void Stop() { cudaEventRecord(stop, 0); }
+
+  float Elapsed() {
+    float elapsed;
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsed, start, stop);
+    return elapsed;
+  }
+};
+
 __global__ void matrix_transpose_naive(int *input, int *output) {
 
   int indexX = threadIdx.x + blockIdx.x * blockDim.x;
