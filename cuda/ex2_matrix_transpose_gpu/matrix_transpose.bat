@@ -1,0 +1,1 @@
+nvcc -o matrix_transpose matrix_transpose.cu -arch=sm_50 -allow-unsupported-compiler
