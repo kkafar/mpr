@@ -75,8 +75,8 @@ __global__ void matrix_transpose_shared(int *input, int *output) {
 }
 
 // basically just fills the array with index.
-void fill_array(int *data) {
-  for (int idx = 0; idx < (N * N); idx++)
+void fill_array(int *data, int size) {
+  for (int idx = 0; idx < size; idx++)
     data[idx] = idx;
 }
 
@@ -95,14 +95,25 @@ void print_output(int *a, int *b) {
   }
 }
 int main(void) {
+  // std::vector<int> arr_sizes;
+  // std::vector<int> thread_counts{32, 64, 128, 256, 512};
+  //
+  // int base = 512;
+  // while (base <= N) {
+  //   arr_sizes.push_back(base);
+  //   base *= 2;
+  // }
+
   int *a, *b;
   int *d_a, *d_b; // device copies of a, b, c
+
+  GpuTimer timer;
 
   int size = N * N * sizeof(int);
 
   // Alloc space for host copies of a, b, c and setup input values
   a = (int *)malloc(size);
-  fill_array(a);
+  fill_array(a, N * N);
   b = (int *)malloc(size);
 
   // Alloc space for device copies of a, b, c
@@ -116,13 +127,25 @@ int main(void) {
   dim3 blockSize(BLOCK_SIZE, BLOCK_SIZE, 1);
   dim3 gridSize(N / BLOCK_SIZE, N / BLOCK_SIZE, 1);
 
+  printf("type,msize,nblocks,blocksize,time\n");
+
+  timer.Start();
   matrix_transpose_naive<<<gridSize, blockSize>>>(d_a, d_b);
+  timer.Stop();
+
+  int gridSizePlain = (N / BLOCK_SIZE) * (N / BLOCK_SIZE);
+  printf("naive,%d,%d,%d,%f\n", N * N, gridSizePlain, BLOCK_SIZE * BLOCK_SIZE, timer.Elapsed());
+  
 
   // Copy result back to host
   // cudaMemcpy(b, d_b, size, cudaMemcpyDeviceToHost);
   // print_output(a,b);
 
+  timer.Start();
   matrix_transpose_shared<<<gridSize, blockSize>>>(d_a, d_b);
+  timer.Stop();
+
+  printf("shared,%d,%d,%d,%f\n", N * N, gridSizePlain, BLOCK_SIZE * BLOCK_SIZE, timer.Elapsed());
 
   // Copy result back to host
   cudaMemcpy(b, d_b, size, cudaMemcpyDeviceToHost);
