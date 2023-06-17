@@ -1,0 +1,1 @@
+nvprof --analysis-metrics -o reduction_global_metric.nvvp  reduction_global_gpu.exe
