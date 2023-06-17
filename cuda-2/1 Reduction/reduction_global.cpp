@@ -3,7 +3,7 @@
 
 // cuda runtime
 #include <cuda_runtime.h>
-#include <helper_timer.h>
+#include "helper_timer.h"
 
 #include "reduction.h"
 
