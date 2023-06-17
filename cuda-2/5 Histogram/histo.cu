@@ -1,6 +1,14 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 
+#ifndef C_ARRAY_SIZE
+#define C_ARRAY_SIZE 65536
+#endif
+
+#ifndef C_BIN_COUNT
+#define C_BIN_COUNT 16
+#endif
+
 int log2(int i)
 {
     int r = 0;
@@ -57,9 +65,9 @@ int main(int argc, char **argv)
                (int)devProps.clockRate);
     }
 
-    const int ARRAY_SIZE = 65536;
+    const int ARRAY_SIZE = C_ARRAY_SIZE;
     const int ARRAY_BYTES = ARRAY_SIZE * sizeof(int);
-    const int BIN_COUNT = 16;
+    const int BIN_COUNT = C_BIN_COUNT;
     const int BIN_BYTES = BIN_COUNT * sizeof(int);
 
     // generate the input array on the host
