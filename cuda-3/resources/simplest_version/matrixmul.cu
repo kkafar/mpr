@@ -8,13 +8,17 @@
 #include <math.h>
 #include <helper_timer.h>
 
+#ifndef MATRIX_WH
+#define MATRIX_WH 256
+#endif
+
 using namespace std;
 
 int main()
 {
     // Perform matrix multiplication C = A*B
     // where A, B and C are NxN matrices
-    int N = 16;
+    int N = MATRIX_WH;
     int SIZE = N*N;
 
     // Allocate memory on the host
