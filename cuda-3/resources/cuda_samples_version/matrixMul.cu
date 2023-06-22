@@ -207,6 +207,7 @@ int MatrixMultiply(int argc, char **argv, int block_size, const dim3 &dimsA,
 
   float gpu_time = sdkGetAverageTimerValue(&timer);
   sdkDeleteTimer(&timer);
+  printf("GPU: %f\n", gpu_time);
 
   // Record the stop event
   checkCudaErrors(cudaEventRecord(stop, stream));
