@@ -1,0 +1,13 @@
+## Porównanie
+
+Obliczenia przeprowadzone na macierzach o wymiarze 1024 x 1024
+
+Algorytm Simple:
+
+na GPU: 3.124 ms
+
+Algorytm z Cuda Samples
+
+na GPU: 0.0023 ms
+
+Różnica oczywista!
