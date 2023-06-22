@@ -4,7 +4,6 @@
 #include <time.h>
 #include <cuda_runtime.h>
 #include "kernel.h"
-#include "kernel.cu"
 #include "dev_array.h"
 #include <math.h>
 #include <helper_timer.h>
