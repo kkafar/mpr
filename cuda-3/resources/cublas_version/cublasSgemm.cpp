@@ -4,6 +4,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
+#include <helper_timer.h>
 
 #define IDX2C(i, j, ld) (((j) * (ld)) + (i))
 
@@ -45,6 +46,10 @@ int main()
     std::cout << "C:" << std::endl;
     printMatrix(C, M, N);
 
+    StopWatchInterface *timer;
+    sdkCreateTimer(&timer);
+
+    sdkStartTimer(&timer);
     // Gemm
     cublasSgemm(handle, CUBLAS_OP_T, CUBLAS_OP_T, 
         M, N, K, 
@@ -55,7 +60,11 @@ int main()
         C, M);
 
     cudaDeviceSynchronize();
+    sdkStopTimer(&timer);
+    float gpu_time = sdkGetTimerValue(&timer);
+
     std::cout << "C out:" << std::endl;
+    std::cout << "GPU: " << gpu_time << '\n';
     printMatrix(C, M, N);
 
     cublasDestroy(handle);
@@ -64,6 +73,7 @@ int main()
     cudaFree(B);
     cudaFree(C);
 
+    sdkDeleteTimer(&timer);
     return 0;
 }
 

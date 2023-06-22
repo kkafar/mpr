@@ -7,6 +7,7 @@
 #include "kernel.cu"
 #include "dev_array.h"
 #include <math.h>
+#include <helper_timer.h>
 
 using namespace std;
 
@@ -37,6 +38,11 @@ int main()
 
     d_A.set(&h_A[0], SIZE);
     d_B.set(&h_B[0], SIZE);
+    
+    StopWatchInterface *timer;
+    sdkCreateTimer(&timer);
+  
+    sdkStartTimer(&timer);
 
     matrixMultiplication(d_A.getData(), d_B.getData(), d_C.getData(), N);
     cudaDeviceSynchronize();
@@ -44,9 +50,16 @@ int main()
     d_C.get(&h_C[0], SIZE);
     cudaDeviceSynchronize();
 
+    // Czas kopiowania danych do pamięci hosta wliczam w czas prowadzenia obliczen
+    // bo jezeli nie bedziemy miec tych danych, to nic nam z tych obliczen.
+    sdkStopTimer(&timer);
+    float gpu_time = sdkGetTimerValue(&timer);
+    sdkResetTimer(&timer);
+
     float *cpu_C;
     cpu_C=new float[SIZE];
 
+    sdkStartTimer(&timer);
     // Now do the matrix multiplication on the CPU
     float sum;
     for (int row=0; row<N; row++){
@@ -59,6 +72,9 @@ int main()
         }
     }
 
+    sdkStopTimer(&timer);
+    float cpu_time = sdkGetTimerValue(&timer);
+
     double err = 0;
     // Check the result and make sure it is correct
     for (int ROW=0; ROW < N; ROW++){
@@ -68,6 +84,9 @@ int main()
     }
 
     cout << "Error: " << err << endl;
+    cout << "GPU: " << gpu_time << "  CPU: " << cpu_time << '\n';
 
+
+    sdkDeleteTimer(&timer);
     return 0;
 }
