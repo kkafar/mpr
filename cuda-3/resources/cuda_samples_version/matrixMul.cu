@@ -33,6 +33,7 @@
 // Helper functions and utilities to work with CUDA
 #include <helper_cuda.h>
 #include <helper_functions.h>
+#include <helper_timer.h>
 
 /**
  * Matrix multiplication (CUDA Kernel) on the device: C = A * B
@@ -189,8 +190,11 @@ int MatrixMultiply(int argc, char **argv, int block_size, const dim3 &dimsA,
 
   // Execute the kernel
   int nIter = 300;
+  StopWatchInterface *timer;
+  sdkCreateTimer(&timer);
 
   for (int j = 0; j < nIter; j++) {
+    sdkStartTimer(&timer);
     if (block_size == 16) {
       MatrixMulCUDA<16>
           <<<grid, threads, 0, stream>>>(d_C, d_A, d_B, dimsA.x, dimsB.x);
@@ -198,7 +202,11 @@ int MatrixMultiply(int argc, char **argv, int block_size, const dim3 &dimsA,
       MatrixMulCUDA<32>
           <<<grid, threads, 0, stream>>>(d_C, d_A, d_B, dimsA.x, dimsB.x);
     }
+    sdkStopTimer(&timer);
   }
+
+  float gpu_time = sdkGetAverageTimerValue(&timer);
+  sdkDeleteTimer(&timer);
 
   // Record the stop event
   checkCudaErrors(cudaEventRecord(stop, stream));
